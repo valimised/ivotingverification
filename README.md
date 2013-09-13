@@ -16,6 +16,6 @@ Notes for testers and developers:
 The verification application downloads its configuration in JSON format from configuration server. The URL of the config server is stored as a single line in config.txt file in res/raw/config.txt 
 
 config.txt:
-https://config-server.valimised.ee/config.json
+https://<config-server URL>/config.json
 
 The verification application uses HTTPS protocol and verifies the server certificate. All certificates required to verify server certificate have to be stored in BouncyCastle format keystore in res/raw/mytruststore.bks
