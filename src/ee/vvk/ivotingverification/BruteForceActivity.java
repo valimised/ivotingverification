@@ -19,13 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
-package ee.vvk.ivotingverification;
 
-import java.security.Security;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+package ee.vvk.ivotingverification;
 
 import android.app.Activity;
 import android.app.Notification;
@@ -40,6 +35,7 @@ import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ListView;
 import android.widget.TextView;
 import ee.vvk.ivotingverification.adapter.CandidatesListAdapter;
@@ -50,6 +46,10 @@ import ee.vvk.ivotingverification.util.C;
 import ee.vvk.ivotingverification.util.Crypto;
 import ee.vvk.ivotingverification.util.RegexMatcher;
 import ee.vvk.ivotingverification.util.Util;
+import java.security.Security;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Brute force analysis of the vote.
@@ -79,6 +79,10 @@ public class BruteForceActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		if(! Util.SpecialModels.contains(Util.getDeviceName())) {
+			getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+					WindowManager.LayoutParams.FLAG_SECURE);
+		}
 
 		Security.removeProvider(ext.org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME);
 		Security.addProvider(new ext.org.bouncycastle.jce.provider.BouncyCastleProvider());
@@ -147,14 +151,13 @@ public class BruteForceActivity extends Activity {
 
 		@Override
 		protected void onPostExecute(ArrayList<Candidate> candidates) {
-
-			if (candidates != null && candidates.size() > 0) {
+			Util.stopSpinner(mLoadingSpinner);
+			if (candidates.size() > 0) {
 
 				CandidatesListAdapter adapter = new CandidatesListAdapter(
 						getApplicationContext(), candidates, vote);
 				list.setAdapter(adapter);
 
-				Util.stopSpinner(mLoadingSpinner);
 				sendNotification(C.notificationTitle, C.notificationMessage);
 
 				lblChoice.setVisibility(View.VISIBLE);
@@ -204,6 +207,7 @@ public class BruteForceActivity extends Activity {
 							if (!RegexMatcher.IsFortyCharacters(hexControlCode)) {
 								Util.startErrorIntent(BruteForceActivity.this,
 										C.badServerResponseMessage, true);
+								return null;
 							}
 							String electionId = qrCode.split("\n")[i]
 									.split("\t")[0];

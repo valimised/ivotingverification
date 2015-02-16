@@ -22,7 +22,9 @@
  
 package ee.vvk.ivotingverification.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import android.graphics.Typeface;
 
@@ -37,15 +39,19 @@ public class C {
 	
 	public static String configURL = "";
 	
-	public static String helpURL = "";
+	public static String langURL = "";
+	
+	public static String helpURL = "https://www.valimised.ee/";
 
 	public final static String trustStorePass = "secret";
+	
+	public static String trustStoreURL = "";
 
 	public static Typeface typeFace = Typeface.DEFAULT;
 
 	public static String welcomeMessage = "";
 
-	public static String loading = "Laeb...";
+	public static String loading = "Laadib...";
 
 	public static String loadingWindow = "#33B5E5";
 
@@ -97,7 +103,7 @@ public class C {
 
 	public static String lblCloseTimeout = "Rakendus sulgub XX sekundi pärast!";
 
-	public static String notificationTitle = "VVK";
+	public static String notificationTitle = "Valimised";
 
 	public static String notificationMessage = "Valik on tuvastatud";
 
@@ -140,6 +146,12 @@ public class C {
 	public static String badServerResponseMessage = "Tehniline viga, palun teavitage valimiste läbiviijat";
 
 	public static String badVerificationMessage = "";
+	
+	public static boolean fromPro = false;
+	
+	public static boolean forLanguages = false;
+	
+	public static List<String> languages = new ArrayList<String>();
 
 	public static HashMap<String, String> elections = new HashMap<String, String>();
 }

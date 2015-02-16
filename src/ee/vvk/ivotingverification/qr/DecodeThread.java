@@ -81,7 +81,7 @@ final class DecodeThread extends Thread {
 
 		if (decodeFormats == null || decodeFormats.isEmpty()) {
 			SharedPreferences prefs = PreferenceManager
-                    .getDefaultSharedPreferences(activity);
+					.getDefaultSharedPreferences(activity);
 			decodeFormats = EnumSet.noneOf(BarcodeFormat.class);
 			if (prefs.getBoolean(PreferencesActivity.KEY_DECODE_1D, false)) {
 				decodeFormats.addAll(DecodeFormatManager.ONE_D_FORMATS);

@@ -19,7 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
+
 package ee.vvk.ivotingverification;
 
 import android.app.Activity;
@@ -78,7 +78,7 @@ public class HelpActivity extends Activity {
 			public boolean onJsAlert(WebView view, String url, String message,
 					final JsResult result) {
 				alert = new AlertDialog.Builder(HelpActivity.this)
-						.setTitle("VVK:")
+						.setTitle("Valimised:")
 						.setMessage(message)
 						.setPositiveButton(android.R.string.ok,
 								new AlertDialog.OnClickListener() {
@@ -102,7 +102,7 @@ public class HelpActivity extends Activity {
 			public boolean onJsConfirm(WebView view, String url,
 					String message, final JsResult result) {
 				alert = new AlertDialog.Builder(HelpActivity.this)
-						.setTitle("VVK:")
+						.setTitle("Valimised:")
 						.setMessage(message)
 						.setCancelable(true)
 						.setPositiveButton(android.R.string.ok,
@@ -141,7 +141,7 @@ public class HelpActivity extends Activity {
 					String defaultValue, final JsPromptResult result) {
 
 				alert = new AlertDialog.Builder(HelpActivity.this)
-						.setTitle("VVK:")
+						.setTitle("Valimised:")
 						.setMessage(message)
 						.setCancelable(true)
 						.setPositiveButton(android.R.string.ok,

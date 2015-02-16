@@ -19,20 +19,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
+
 package ee.vvk.ivotingverification;
 
 import java.io.IOException;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.SurfaceHolder;
@@ -45,7 +43,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 import ee.vvk.ivotingverification.qr.CameraManager;
 import ee.vvk.ivotingverification.qr.CaptureActivityHandler;
 import ee.vvk.ivotingverification.util.C;
@@ -112,8 +109,6 @@ public class ErrorActivity extends Activity implements SurfaceHolder.Callback {
 					MainActivity.class);
 			startActivity(intent);
 		}
-		if (this == null)
-			return;
 
 		cameraManager = new CameraManager(this);
 
@@ -289,15 +284,20 @@ public class ErrorActivity extends Activity implements SurfaceHolder.Callback {
 		Intent helpActivity = new Intent(this, HelpActivity.class);
 		startActivity(helpActivity);
 	}
-	
+
 	public void clickPacketDataButton(View view) {
 		connectionButtonIsClicked = true;
-		try {
-			ErrorActivity.this.startActivity(new Intent(
-					Settings.ACTION_DATA_ROAMING_SETTINGS));
-		} catch (Exception e) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
 			ErrorActivity.this.startActivity(new Intent(
 					Settings.ACTION_SETTINGS));
+		} else {
+			try {
+				ErrorActivity.this.startActivity(new Intent(
+						Settings.ACTION_DATA_ROAMING_SETTINGS));
+			} catch (Exception e) {
+				ErrorActivity.this.startActivity(new Intent(
+						Settings.ACTION_SETTINGS));
+			}
 		}
 	}
 

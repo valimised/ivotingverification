@@ -19,7 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
+
 package ee.vvk.ivotingverification;
 
 import java.io.IOException;
@@ -108,7 +108,7 @@ public class VoteDownloadActivity extends Activity {
 
 		@Override
 		protected void onPostExecute(String result) {
-
+			Util.stopSpinner(mLoadingSpinner);
 			if (result != null) {
 				if (Util.DEBUGGABLE) {
 					Log.d(TAG, "Response from the server: " + result);
@@ -119,14 +119,13 @@ public class VoteDownloadActivity extends Activity {
 					if (!RegexMatcher.IsOneOrTwoDigits(versionNumber)) {
 						Util.startErrorIntent(VoteDownloadActivity.this,
 								C.badServerResponseMessage, true);
-						Util.stopSpinner(mLoadingSpinner);
+						
 					}
 					controlState = Integer.parseInt(result.split("\n")[1]);
 
 					if (!RegexMatcher.IsOneDigit(result.split("\n")[1])) {
 						Util.startErrorIntent(VoteDownloadActivity.this,
 								C.badServerResponseMessage, true);
-						Util.stopSpinner(mLoadingSpinner);
 					}
 					controlContainer = result.split("\n" + controlState + "\n")[1];
 
@@ -138,13 +137,11 @@ public class VoteDownloadActivity extends Activity {
 							Log.d(TAG, "Control container: " + controlContainer);
 						}
 						webResult = controlContainer;
-						Util.stopSpinner(mLoadingSpinner);
 
 						startNextIntent();
 					} else {
 						Util.startErrorIntent(VoteDownloadActivity.this,
 								controlContainer, true);
-						Util.stopSpinner(mLoadingSpinner);
 					}
 				} catch (Exception e) {
 					Util.startErrorIntent(VoteDownloadActivity.this,
@@ -173,8 +170,7 @@ public class VoteDownloadActivity extends Activity {
 				try {
 					List<NameValuePair> entryNameValuePairs = new ArrayList<NameValuePair>();
 					entryNameValuePairs.add(new BasicNameValuePair(
-							Util.VOTE_PARAMETR, qrCode.substring(0, 40)));
-
+							Util.VERIFY_PARAMETER, qrCode.substring(0, 40)));
 					response = new HttpRequest(VoteDownloadActivity.this).post(
 							C.appURL, null, entryNameValuePairs);
 				} catch (Exception e) {
@@ -184,8 +180,10 @@ public class VoteDownloadActivity extends Activity {
 					return null;
 				}
 				try {
-					return Util.readLines(response.getEntity().getContent(),
-							Util.ENCODING);
+					if (response != null)
+						return Util.readLines(
+								response.getEntity().getContent(),
+								Util.ENCODING);
 				} catch (IllegalStateException e) {
 					if (Util.DEBUGGABLE) {
 						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
@@ -200,7 +198,7 @@ public class VoteDownloadActivity extends Activity {
 					Util.startErrorIntent(VoteDownloadActivity.this,
 							C.badServerResponseMessage, true);
 				}
-				;
+
 				return null;
 			}
 		}.execute();

@@ -36,9 +36,12 @@
 
     <LinearLayout
         android:id="@+id/frame_bg"
+        android:orientation="horizontal"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:background="#AA444444" />
+        android:background="#AA444444" >
+
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/frame_image"
@@ -61,6 +64,7 @@
             android:id="@+id/target_window_shadow"
             android:layout_width="244dp"
             android:layout_height="244dp"
+            android:orientation="horizontal"
             android:background="@drawable/target_shadow" />
     </LinearLayout>
 
@@ -108,7 +112,8 @@
                 android:textColor="@android:color/darker_gray"
                 android:textSize="22sp"
                 android:textStyle="bold"
-                android:visibility="gone" />
+                android:visibility="gone"
+                android:filterTouchesWhenObscured="true" />
 
             <Button
                 android:id="@+id/btn_next"
@@ -122,7 +127,8 @@
                 android:textColor="@android:color/darker_gray"
                 android:textSize="22sp"
                 android:textStyle="bold"
-                android:visibility="gone" />
+                android:visibility="gone"
+                android:filterTouchesWhenObscured="true" />
         </LinearLayout>
     </LinearLayout>
 

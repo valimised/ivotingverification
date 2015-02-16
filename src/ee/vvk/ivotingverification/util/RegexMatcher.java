@@ -55,6 +55,13 @@ public class RegexMatcher {
 		}
 		return false;
 	}
+	
+	public static boolean isCorrectQR(String value){
+		if(value.matches("^\\w{40}\n(\\w{1,28}\t([A-Fa-f0-9]){40}\n){1,5}")){
+			return true;
+		}	
+		return false;
+	}
 
 	public final static boolean Is256Bytes(String s) {
 		if (s.length() == 256) {

@@ -22,25 +22,25 @@
  
 package ee.vvk.ivotingverification.util;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.Typeface;
+import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import ee.vvk.ivotingverification.ErrorActivity;
 import ee.vvk.ivotingverification.R;
 import ee.vvk.ivotingverification.dialog.LoadingSpinner;
+
+import java.io.*;
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Utilities.
@@ -61,23 +61,31 @@ public class Util {
 	public final static String GET_REQUEST_METHOD = "GET";
 	public final static String TLS_PROTOCOL = "TLS";
 	public final static String ENCODING = "UTF-8";
-	public final static String VOTE_PARAMETR = "vote";
+	public final static String VERIFY_PARAMETER = "verify";
 
 	public final static int TIMEOUT = 10 * 1000;
 	public final static long VIBRATE_DURATION = 350L;
 
 	public static boolean DEBUGGABLE = false;
+	public static boolean CONFIGURABLE = false;
+
+	// Models where camera can't be rotated to portrait
+	public static Set<String> SpecialModels = new HashSet<String>(Arrays.asList("Samsung GT-S6102", "Samsung GT-S5360",
+			"Samsung GT-S5660", "Samsung YP-G1", "Samsung YP-G70"));
 
 	public static KeyStore loadTrustStore(final Activity currentActivity) {
 
 		try {
 			KeyStore localTrustStore = KeyStore.getInstance("BKS");
-			InputStream in = currentActivity.getResources().openRawResource(
-					R.raw.mytruststore);
-
+			InputStream in;
+			if(C.fromPro){
+				in = new FileInputStream(new File(C.trustStoreURL + "/mytruststoresConfig.bks"));
+			}else{
+				in = currentActivity.getResources().openRawResource(
+						R.raw.mytruststore);
+			}
 			try {
 				localTrustStore.load(in, C.trustStorePass.toCharArray());
-
 			} catch (NoSuchAlgorithmException e) {
 				Util.startErrorIntent((Activity) currentActivity,
 						C.badServerResponseMessage, true);
@@ -90,7 +98,6 @@ public class Util {
 			} finally {
 				in.close();
 			}
-
 			return localTrustStore;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -107,7 +114,6 @@ public class Util {
 			while ((line = reader.readLine()) != null) {
 				buff.append(line + "\n");
 			}
-
 			return buff.toString();
 		} finally {
 			in.close();
@@ -184,4 +190,27 @@ public class Util {
 		}
 		return text.toString();
 	}
+
+	public static String getDeviceName() {
+		String manufacturer = Build.MANUFACTURER;
+		String model = Build.MODEL;
+		if (model.startsWith(manufacturer)) {
+			return capitalize(model);
+		} else {
+			return capitalize(manufacturer) + " " + model;
+		}
+	}
+
+	public static String capitalize(String s) {
+		if (s == null || s.length() == 0) {
+			return "";
+		}
+		char first = s.charAt(0);
+		if (Character.isUpperCase(first)) {
+			return s;
+		} else {
+			return Character.toUpperCase(first) + s.substring(1);
+		}
+	}
+
 }

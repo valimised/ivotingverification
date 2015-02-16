@@ -19,19 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
-package ee.vvk.ivotingverification;
 
-import java.io.IOException;
-import java.util.Collection;
+package ee.vvk.ivotingverification;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
@@ -41,18 +38,14 @@ import android.view.SurfaceView;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
-
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.Result;
 import com.google.zxing.ResultPoint;
-
-import ee.vvk.ivotingverification.qr.CameraManager;
-import ee.vvk.ivotingverification.qr.CaptureActivityHandler;
-import ee.vvk.ivotingverification.qr.DecodeFormatManager;
-import ee.vvk.ivotingverification.qr.InactivityTimer;
-import ee.vvk.ivotingverification.qr.Intents;
-import ee.vvk.ivotingverification.qr.ViewfinderView;
+import ee.vvk.ivotingverification.qr.*;
 import ee.vvk.ivotingverification.util.Util;
+
+import java.io.IOException;
+import java.util.Collection;
 
 /**
  * QR code decoder activity.
@@ -76,16 +69,22 @@ public class QRScannerActivity extends Activity implements
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		if (Util.SpecialModels.contains(Util.getDeviceName())){
+			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		} else {
+			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		}
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
 		setContentView(R.layout.qrscanner_activity);
 
 		hasSurface = false;
 		if (this != null)
 			inactivityTimer = new InactivityTimer(this);
+
 	}
 
 	public ViewfinderView getViewfinderView() {
@@ -103,9 +102,6 @@ public class QRScannerActivity extends Activity implements
 	@Override
 	public void onResume() {
 		super.onResume();
-
-		if (this == null)
-			return;
 
 		cameraManager = new CameraManager(this);
 
@@ -225,9 +221,6 @@ public class QRScannerActivity extends Activity implements
 	public void handleDecode(Result rawResult, Bitmap barcode) {
 		inactivityTimer.onActivity();
 
-		if (this == null)
-			return;
-
 		if (rawResult != null && barcode != null) {
 			Vibrator vibrator = (Vibrator) this
 					.getSystemService(Context.VIBRATOR_SERVICE);
@@ -250,13 +243,6 @@ public class QRScannerActivity extends Activity implements
 		if (points != null && points.length > 0) {
 			Canvas canvas = new Canvas(barcode);
 			Paint paint = new Paint();
-			paint.setColor(getResources().getColor(R.color.result_image_border));
-			paint.setStrokeWidth(3.0f);
-			paint.setStyle(Paint.Style.STROKE);
-			Rect border = new Rect(2, 2, barcode.getWidth() - 2,
-					barcode.getHeight() - 2);
-			canvas.drawRect(border, paint);
-
 			paint.setColor(getResources().getColor(R.color.result_points));
 			if (points.length == 2) {
 				paint.setStrokeWidth(4.0f);
@@ -299,9 +285,11 @@ public class QRScannerActivity extends Activity implements
 	}
 
 	public void restartPreviewAfterDelay(long delayMS) {
+
 		if (handler != null) {
 			handler.sendEmptyMessageDelayed(R.id.restart_preview, delayMS);
 		}
+
 	}
 
 	public void drawViewfinder() {

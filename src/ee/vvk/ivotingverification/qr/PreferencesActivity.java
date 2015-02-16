@@ -83,7 +83,7 @@ public final class PreferencesActivity extends PreferenceActivity implements
 		super.onCreate(icicle);
 
 		PreferenceScreen preferences = getPreferenceScreen();
-		preferences.getSharedPreferences() 
+		preferences.getSharedPreferences()
 				.registerOnSharedPreferenceChangeListener(this);
 		decode1D = (CheckBoxPreference) preferences
 				.findPreference(KEY_DECODE_1D);

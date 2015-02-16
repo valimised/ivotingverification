@@ -19,13 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
+
 package ee.vvk.ivotingverification;
-
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.http.HttpResponse;
 
 import android.app.Activity;
 import android.content.Context;
@@ -39,12 +34,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.View;
+import android.view.*;
 import android.view.View.OnClickListener;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -53,10 +44,11 @@ import ee.vvk.ivotingverification.dialog.LoadingSpinner;
 import ee.vvk.ivotingverification.qr.CameraManager;
 import ee.vvk.ivotingverification.qr.CaptureActivityHandler;
 import ee.vvk.ivotingverification.qr.InactivityTimer;
-import ee.vvk.ivotingverification.util.C;
-import ee.vvk.ivotingverification.util.HttpRequest;
-import ee.vvk.ivotingverification.util.JSONParser;
-import ee.vvk.ivotingverification.util.Util;
+import ee.vvk.ivotingverification.util.*;
+import org.apache.http.HttpResponse;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Main activity. The first screen.
@@ -83,6 +75,18 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		if (savedInstanceState == null && Util.CONFIGURABLE) {
+			Bundle extras = getIntent().getExtras();
+			if (extras != null && extras.size() == 2) {
+				C.configURL = extras.getString("configURL");
+				C.trustStoreURL = extras.getString("trustStoreURL");
+				C.fromPro = true;
+			}
+		}
+		if (!C.fromPro) {
+			C.configURL = Util.readRawTextFile(this.getApplicationContext(),
+					R.raw.config).trim();
+		}
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -104,13 +108,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		bgShape.setColor(Color.GRAY);
 
 		linearLayout = (LinearLayout) findViewById(R.id.target_window_error_shadow);
-
 		ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
 		if (networkInfo != null && networkInfo.isConnected()) {
-			C.configURL = Util.readRawTextFile(this.getApplicationContext(),
-					R.raw.config).trim();
-			urlConnConnect();
+			urlConnect();
 		} else {
 			Util.startErrorIntent(MainActivity.this, C.noNetworkMessage, false);
 		}
@@ -159,10 +160,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	@Override
 	public void onResume() {
 		super.onResume();
-
-		if (this == null)
-			return;
-
 		cameraManager = new CameraManager(this);
 
 		if (cameraManager == null) {
@@ -205,9 +202,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 					Log.d(TAG, contents);
 				}
 				try {
-					if (contents != null && contents.getBytes().length <= 391
-							&& contents.substring(40, 41).equals("\n")) {
-						startVoteDownloadActvity(contents);
+					if (contents != null && RegexMatcher.isCorrectQR(contents)) {
+						startVoteDownloadActivity(contents);
 					} else {
 						Util.startErrorIntent(MainActivity.this,
 								C.problemQrCodeMessage, true);
@@ -226,7 +222,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		}
 	}
 
-	private void startVoteDownloadActvity(String contents) {
+	private void startVoteDownloadActivity(String contents) {
 		Intent next_intent = new Intent(this, VoteDownloadActivity.class);
 		next_intent.putExtra(Util.EXTRA_MESSAGE, contents);
 		startActivity(next_intent);
@@ -235,6 +231,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		C.fromPro = false;
 		Util.stopSpinner(mLoadingSpinner);
 		try {
 			trimCache(this);
@@ -369,11 +366,95 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
 		@Override
 		protected void onPostExecute(String result) {
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, result);
-			}
+
 			try {
 				try {
+					if (result == null && Util.DEBUGGABLE)
+						Log.d(TAG, "result is null");
+					new JSONParser(result);
+				} catch (Exception e) {
+					onDestroy();
+					Util.startErrorIntent(MainActivity.this,
+							C.badServerResponseMessage, true);
+					if (Util.DEBUGGABLE) {
+						Log.e(TAG, e.getMessage());
+					}
+				}
+				String locale = java.util.Locale.getDefault().toString()
+						.substring(0, 2);
+				if (!C.languages.isEmpty() && C.languages.contains(locale)){
+					C.forLanguages = true;
+					C.langURL = C.configURL.replace("MultiLang.json", locale.toUpperCase() + ".json");
+					urlConnectLang();
+				}else{
+					Util.stopSpinner(mLoadingSpinner);
+					initMainWindow();
+				}
+			} catch (Exception e) {
+				if (Util.DEBUGGABLE) {
+					Log.e(TAG, e.getMessage());
+				}
+			}
+		}
+	}
+
+	private void urlConnect() {
+		new GetHtmlTask() {
+
+			@Override
+			protected String doInBackground(Void... arg0) {
+				try {
+					response = new HttpRequest(MainActivity.this).get(
+							C.configURL, null);
+					System.setProperty("http.keepAlive", "false");
+				} catch (Exception e) {
+					if (Util.DEBUGGABLE) {
+						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
+					}
+					return null;
+				}
+				try {
+					if (response == null) {
+						return null;
+					} else {
+						return Util.readLines(
+								response.getEntity().getContent(),
+								Util.ENCODING);
+					}
+				} catch (IllegalStateException e) {
+					if (Util.DEBUGGABLE) {
+						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
+					}
+					Util.startErrorIntent(MainActivity.this,
+							C.badServerResponseMessage, true);
+
+				} catch (IOException e) {
+					if (Util.DEBUGGABLE) {
+						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
+					}
+					Util.startErrorIntent(MainActivity.this,
+							C.badServerResponseMessage, true);
+				}
+				;
+				return null;
+			}
+		}.execute();
+	}
+	
+	abstract class GetHtmlTaskLang extends AsyncTask<Void, Void, String> {
+
+		@Override
+		protected void onPreExecute() {
+			
+		}
+
+		@Override
+		protected void onPostExecute(String result) {
+
+			try {
+				try {
+					if (result == null && Util.DEBUGGABLE)
+						Log.d(TAG, "result is null");
 					new JSONParser(result);
 				} catch (Exception e) {
 					onDestroy();
@@ -384,6 +465,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 					}
 				}
 				Util.stopSpinner(mLoadingSpinner);
+				C.forLanguages = false;
 				initMainWindow();
 			} catch (Exception e) {
 				if (Util.DEBUGGABLE) {
@@ -392,15 +474,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 			}
 		}
 	}
-
-	private void urlConnConnect() {
-		new GetHtmlTask() {
+	private void urlConnectLang() {
+		new GetHtmlTaskLang() {
 
 			@Override
 			protected String doInBackground(Void... arg0) {
 				try {
 					response = new HttpRequest(MainActivity.this).get(
-							C.configURL, null);
+							C.langURL, null);
+					System.setProperty("http.keepAlive", "false");
 				} catch (Exception e) {
 					if (Util.DEBUGGABLE) {
 						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);

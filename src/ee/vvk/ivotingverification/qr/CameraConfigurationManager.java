@@ -39,17 +39,17 @@
 
 package ee.vvk.ivotingverification.qr;
 
-import java.util.Collection;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.hardware.Camera;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 import ee.vvk.ivotingverification.util.Util;
+import java.util.Collection;
 
 /**
  * A class which deals with reading, parsing, and setting the camera parameters
@@ -62,7 +62,6 @@ final class CameraConfigurationManager {
 
 	private static final String TAG = "CameraConfiguration";
 	private static final int MIN_PREVIEW_PIXELS = 320 * 240; // small screen
-	private static final int MAX_PREVIEW_PIXELS = 800 * 480; // large/HD screen
 	private final Context context;
 	private Point screenResolution;
 	private Point cameraResolution;
@@ -76,18 +75,21 @@ final class CameraConfigurationManager {
 		Camera.Parameters parameters = camera.getParameters();
 		WindowManager manager = (WindowManager) context
 				.getSystemService(Context.WINDOW_SERVICE);
+		int width = 0;
+		int height = 0;
 
-		Display display = manager.getDefaultDisplay();
-
-		int width = display.getWidth();
-		int height = display.getHeight();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+			Point size = new Point();
+			manager.getDefaultDisplay().getSize(size);
+			width = size.x;
+			height = size.y;
+		} else {
+			Display d = manager.getDefaultDisplay();
+			width = d.getWidth();
+			height = d.getHeight();
+		}
 
 		if (width < height) {
-			if (Util.DEBUGGABLE) {
-				Log.i(TAG,
-						"Display reports portrait orientation; assuming this is incorrect");
-			}
-
 			int temp = width;
 			width = height;
 			height = temp;
@@ -110,7 +112,10 @@ final class CameraConfigurationManager {
 	void setDesiredCameraParameters(Camera camera) {
 
 		Camera.Parameters parameters = camera.getParameters();
-		camera.setDisplayOrientation(90);
+		if (! Util.SpecialModels.contains(Util.getDeviceName())) {
+			camera.setDisplayOrientation(90);
+		}
+
 		if (parameters == null) {
 			if (Util.DEBUGGABLE) {
 				Log.w(TAG,
@@ -190,32 +195,31 @@ final class CameraConfigurationManager {
 
 		Point bestSize = null;
 
-		int diff = Integer.MAX_VALUE;
+		double diff = Double.MAX_VALUE;
 
 		for (Camera.Size supportedPreviewSize : parameters
 				.getSupportedPreviewSizes()) {
-
 			int pixels = supportedPreviewSize.height
 					* supportedPreviewSize.width;
 
-			if (pixels < MIN_PREVIEW_PIXELS || pixels > MAX_PREVIEW_PIXELS) {
+			if (pixels < MIN_PREVIEW_PIXELS || pixels > screenResolution.x * screenResolution.y * 1.20) {
 				continue;
 			}
 
-			int supportedWidth = portrait ? supportedPreviewSize.height
+			double supportedWidth = portrait ? supportedPreviewSize.height
 					: supportedPreviewSize.width;
-			int supportedHeight = portrait ? supportedPreviewSize.width
+			double supportedHeight = portrait ? supportedPreviewSize.width
 					: supportedPreviewSize.height;
-			int newDiff = Math.abs(screenResolution.x * supportedHeight
-					- supportedWidth * screenResolution.y);
+			double newDiff = Math.abs(screenResolution.y / supportedHeight
+					- screenResolution.x / supportedWidth);
 
 			if (newDiff == 0) {
-				bestSize = new Point(supportedWidth, supportedHeight);
+				bestSize = new Point((int)supportedWidth,(int) supportedHeight);
 				break;
 			}
 
 			if (newDiff < diff) {
-				bestSize = new Point(supportedWidth, supportedHeight);
+				bestSize = new Point((int)supportedWidth, (int)supportedHeight);
 				diff = newDiff;
 			}
 		}

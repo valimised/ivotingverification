@@ -39,24 +39,18 @@
 
 package ee.vvk.ivotingverification.qr;
 
-import java.util.Map;
-
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
-
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.ReaderException;
-import com.google.zxing.Result;
+import com.google.zxing.*;
 import com.google.zxing.common.HybridBinarizer;
-
 import ee.vvk.ivotingverification.QRScannerActivity;
 import ee.vvk.ivotingverification.R;
 import ee.vvk.ivotingverification.util.Util;
+
+import java.util.Map;
 
 final class DecodeHandler extends Handler {
 
@@ -91,16 +85,19 @@ final class DecodeHandler extends Handler {
 		Result rawResult = null;
 		PlanarYUVLuminanceSource source;
 
-		byte[] rotatedData = new byte[data.length];
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++)
-				rotatedData[x * height + height - y - 1] = data[x + y * width];
-		}
-		int tmp = width;
-		width = height;
-		height = tmp;
+		if (! Util.SpecialModels.contains(Util.getDeviceName())){
+			byte[] rotatedData = new byte[data.length];
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++)
+					rotatedData[x * height + height - y - 1] = data[x + y * width];
+			}
+			data = rotatedData;
+			int tmp = width;
+			width = height;
+			height = tmp;
 
-		source = activity.getCameraManager().buildLuminanceSource(rotatedData,
+		}
+		source = activity.getCameraManager().buildLuminanceSource(data,
 				width, height);
 		if (source != null) {
 			BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));

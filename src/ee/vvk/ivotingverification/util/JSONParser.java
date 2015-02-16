@@ -19,14 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
+
 package ee.vvk.ivotingverification.util;
 
 import java.util.HashMap;
 import java.util.Iterator;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import android.util.Log;
 
 /**
  * JSON parser.
@@ -51,24 +54,40 @@ public class JSONParser {
 	private JSONObject jObj = null;
 	private JSONObject jObjConfig = null;
 
+	// FEFF because this is the Unicode char represented by the UTF-8 byte order
+	// mark (EF BB BF).
+	public static final String UTF8_BOM = "\uFEFF";
+
 	public JSONParser(String input) throws JSONException {
 
-		jObj = new JSONObject(input.substring(1, input.length()));
+		if (input.substring(0, 1).equals(UTF8_BOM)) {
+			jObj = new JSONObject(input.substring(1, input.length()));
+		} else {
+			jObj = new JSONObject(input.substring(0, input.length()));
+		}
 		jObjConfig = jObj.optJSONObject(TAG_APP_CONFIG);
-
 		parseJsonAppConfig(jObjConfig);
 	}
 
 	public void parseJsonAppConfig(JSONObject json) throws JSONException {
-		parseJsonTexts(json);
-		parseJsonErrors(json);
-		parseJsonColors(json);
-		parseJsonParams(json);
-		parseJsonElections(json);
+		if (C.forLanguages) {
+			parseJsonTexts(json);
+			parseJsonErrors(json);
+			parseJsonElections(json);
+		} else {
+			parseJsonTexts(json);
+			parseJsonErrors(json);
+			parseJsonColors(json);
+			parseJsonParams(json);
+			parseJsonElections(json);
+			parseJsonLanguages(json);
+		}
 	}
 
 	private void parseJsonTexts(JSONObject json) throws JSONException {
-		texts = json.optJSONObject(TAG_TEXTS);
+		if (texts == null) {
+			texts = json.optJSONObject(TAG_TEXTS);
+		}
 		if (texts.length() > 0) {
 			C.loading = texts.optString("loading", C.loading);
 			C.welcomeMessage = texts.optString("welcome_message",
@@ -93,8 +112,10 @@ public class JSONParser {
 	}
 
 	private void parseJsonErrors(JSONObject json) throws JSONException {
-		errors = json.optJSONObject(TAG_ERRORS);
-		if (texts.length() > 0) {
+		if (errors == null) {
+			errors = json.optJSONObject(TAG_ERRORS);
+		}
+		if (errors.length() > 0) {
 			C.noNetworkMessage = errors.optString("no_network_message",
 					C.noNetworkMessage);
 			C.problemQrCodeMessage = errors.optString("problem_qrcode_message",
@@ -187,7 +208,9 @@ public class JSONParser {
 	}
 
 	private void parseJsonElections(JSONObject json) throws JSONException {
-		elections = json.optJSONObject(TAG_ELECTIONS);
+		if (elections == null) {
+			elections = json.optJSONObject(TAG_ELECTIONS);
+		}
 		if (elections.length() > 0) {
 			Iterator<String> myIter = elections.keys();
 			HashMap<String, String> electionsMap = new HashMap<String, String>();
@@ -198,6 +221,15 @@ public class JSONParser {
 						elections.optString(tempValue, tempValue));
 			}
 			C.elections = electionsMap;
+		}
+	}
+
+	private void parseJsonLanguages(JSONObject json) throws JSONException {
+		if (json.length() > 5) {
+			JSONArray languagesArray = json.optJSONArray("languages");
+			for (int i = 0; i < languagesArray.length(); i++) {
+				C.languages.add(languagesArray.optString(i));
+			}
 		}
 	}
 }

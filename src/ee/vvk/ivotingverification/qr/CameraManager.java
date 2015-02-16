@@ -39,8 +39,6 @@
 
 package ee.vvk.ivotingverification.qr;
 
-import java.io.IOException;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Point;
@@ -52,6 +50,8 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import ee.vvk.ivotingverification.util.Util;
+
+import java.io.IOException;
 
 /**
  * This object wraps the Camera service object and expects to be the only one
@@ -65,8 +65,8 @@ public final class CameraManager {
 	private static final String TAG = CameraManager.class.getSimpleName();
 	private static final int MIN_FRAME_WIDTH = 240;
 	private static final int MIN_FRAME_HEIGHT = 240;
-	private static final int MAX_FRAME_WIDTH = 600;
-	private static final int MAX_FRAME_HEIGHT = 400;
+	private static final int MAX_FRAME_WIDTH = 940;
+	private static final int MAX_FRAME_HEIGHT = 540;
 	private final Context context;
 	private final CameraConfigurationManager configManager;
 	private Camera camera;
@@ -186,28 +186,43 @@ public final class CameraManager {
 				return null;
 			}
 			Point screenResolution = configManager.getScreenResolution();
-			int width = screenResolution.x * 3 / 4;
-			if (width < MIN_FRAME_WIDTH) {
-				width = MIN_FRAME_WIDTH;
-			} else if (width > MAX_FRAME_WIDTH) {
-				width = MAX_FRAME_WIDTH;
-			}
-			int height = screenResolution.y * 3 / 4;
-			if (height < MIN_FRAME_HEIGHT) {
-				height = MIN_FRAME_HEIGHT;
-			} else if (height > MAX_FRAME_HEIGHT) {
-				height = MAX_FRAME_HEIGHT;
-			}
+			int width = MIN_FRAME_WIDTH; int height = MIN_FRAME_HEIGHT;
+			if (! Util.SpecialModels.contains(Util.getDeviceName())) {
+				int tmp = 7 * screenResolution.x / 8;
+				width = (tmp) < MIN_FRAME_WIDTH ? MIN_FRAME_WIDTH : (tmp);
+				tmp = 1 * screenResolution.y / 3;
+				height = (tmp) < MIN_FRAME_WIDTH ? MIN_FRAME_WIDTH : ((tmp) > MAX_FRAME_HEIGHT ?  MAX_FRAME_HEIGHT : (tmp));
+			}else {
 
+				width = findDesiredDimensionInRange(screenResolution.x,
+						MIN_FRAME_WIDTH, MAX_FRAME_WIDTH);
+
+				height = findDesiredDimensionInRange(screenResolution.y,
+						MIN_FRAME_HEIGHT, MAX_FRAME_HEIGHT);
+			}
 			int leftOffset = (screenResolution.x - width) / 2;
-			int topOffset = (screenResolution.y - height - 40) / 2;
+			int topOffset = (screenResolution.y - height) / 2;
+
 			framingRect = new Rect(leftOffset, topOffset, leftOffset + width,
-					topOffset + height - 40);
+					topOffset + height);
 			if (Util.DEBUGGABLE) {
 				Log.d(TAG, "Calculated framing rect: " + framingRect);
 			}
 		}
 		return framingRect;
+	}
+
+	private static int findDesiredDimensionInRange(int resolution, int hardMin,
+			int hardMax) {
+		int dim = resolution / 2; // Target 50% of each dimension
+		if (dim < hardMin) {
+			return hardMin;
+		}
+		if (dim > hardMax) {
+			return hardMax;
+		}
+		return dim;
+
 	}
 
 	public Rect getFramingRectInPreview() {
@@ -221,10 +236,35 @@ public final class CameraManager {
 			Rect rect = new Rect(framingRect);
 			Point cameraResolution = configManager.getCameraResolution();
 			Point screenResolution = configManager.getScreenResolution();
-			rect.left = rect.left * cameraResolution.y / screenResolution.x;
-			rect.right = rect.right * cameraResolution.y / screenResolution.x;
-			rect.top = rect.top * cameraResolution.x / screenResolution.y;
-			rect.bottom = rect.bottom * cameraResolution.x / screenResolution.y;
+
+			if (! Util.SpecialModels.contains(Util.getDeviceName())) {
+				rect.left = rect.left * cameraResolution.y / screenResolution.x;
+				rect.right = rect.right * cameraResolution.y / screenResolution.x;
+				rect.top = rect.top * cameraResolution.x / screenResolution.y;
+				rect.bottom = rect.bottom * cameraResolution.x / screenResolution.y;
+			}else{
+				rect.left = rect.left * cameraResolution.x / screenResolution.x;
+				rect.right = rect.right * cameraResolution.x / screenResolution.x;
+				rect.top = rect.top * cameraResolution.y / screenResolution.y;
+				rect.bottom = rect.bottom * cameraResolution.y / screenResolution.y;
+			}
+
+			int beforeL = rect.left;
+			int beforeR = rect.right;
+			int diffLR = rect.right - rect.left;
+			int diffTB = rect.bottom - rect.top;
+			int difference = diffTB - diffLR;
+
+			if (difference > 80) {
+				int extraSpace = difference / 2 - 50;
+				rect.left = rect.left - extraSpace;
+				rect.right = rect.right + extraSpace;
+				if (rect.left < 0)
+					rect.left = beforeL;
+				if (rect.right > screenResolution.x)
+					rect.right = beforeR;
+			}
+
 			framingRectInPreview = rect;
 		}
 		return framingRectInPreview;

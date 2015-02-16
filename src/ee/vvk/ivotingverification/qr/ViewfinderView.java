@@ -112,12 +112,8 @@ public final class ViewfinderView extends View {
 			return;
 		}
 
-		WindowManager manager = (WindowManager) getContext().getSystemService(
-				Context.WINDOW_SERVICE);
-		Display display = manager.getDefaultDisplay();
-
-		int width = display.getWidth();
-		int height = display.getHeight();
+		int width = canvas.getWidth();
+		int height = canvas.getHeight();
 
 		int frameSize = (int) Util.convertPixelsToDp(235, context);
 

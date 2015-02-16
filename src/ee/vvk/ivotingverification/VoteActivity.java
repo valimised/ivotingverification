@@ -19,8 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
- 
- package ee.vvk.ivotingverification;
+
+package ee.vvk.ivotingverification;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -31,11 +31,9 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import ee.vvk.ivotingverification.model.Vote;
 import ee.vvk.ivotingverification.util.C;
-import ee.vvk.ivotingverification.util.RegexMatcher;
 import ee.vvk.ivotingverification.util.Util;
 
 /**
@@ -71,8 +69,7 @@ public class VoteActivity extends Activity {
 		lblVote.setText(C.lblVote);
 		lblVote.setTypeface(C.typeFace);
 		lblVote.setTextColor(Util.generateHexColorValue(C.lblForeground));
-		lblVote.setBackgroundColor(Util
-				.generateHexColorValue(C.lblBackground));
+		lblVote.setBackgroundColor(Util.generateHexColorValue(C.lblBackground));
 
 		View lblShadow = (View) findViewById(R.id.vote_label_shadow);
 		lblShadow.setBackgroundColor(Util.generateHexColorValue(C.lblShadow));
@@ -106,7 +103,7 @@ public class VoteActivity extends Activity {
 		Vote vxml = new Vote();
 		try {
 			vxml.parseHeader(webResult);
-			
+
 			btnVoteVerify.setClickable(true);
 			btnVoteVerify.setVisibility(android.view.View.VISIBLE);
 		} catch (Exception e) {
