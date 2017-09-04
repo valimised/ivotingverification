@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/choice_title_label"
+            android:layout_width="fill_parent"
+            android:layout_height="48dp"
+            android:background="@color/light_blue"
+            android:gravity="center_vertical|center_horizontal"
+            android:text=""
+            android:textColor="#ffffff"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/close_view_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="15dp"
+            android:src="@drawable/ic_close"
+            android:layout_centerVertical="true"/>
+    </RelativeLayout>
+    <View
+        android:id="@+id/choice_title_label_shadow"
+        android:layout_width="fill_parent"
+        android:layout_height="2dip"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:background="#008EC2" />
+
+    <TextView
+        android:id="@+id/close_timeout_label"
+        android:layout_width="fill_parent"
+        android:layout_height="48dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="15dp"
+        android:background="@drawable/rounded_lbl"
+        android:gravity="center_vertical|center_horizontal"
+        android:padding="8dp"
+        android:text=""
+        android:textColor="@android:color/black"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/close_timeout_label_shadow"
+        android:layout_width="fill_parent"
+        android:layout_height="2dip"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:layout_marginBottom="15dp"
+        android:layout_marginLeft="18dp"
+        android:layout_marginRight="18dp"
+        android:background="@drawable/rounded_lbl" />
+
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="15dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="5dp" >
+    </ListView>
+
+</LinearLayout>

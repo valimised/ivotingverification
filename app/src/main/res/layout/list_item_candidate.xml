@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/candidate_list_item_container"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:layout_marginBottom="10dp"
+    android:layout_marginLeft="16dp"
+    android:layout_marginRight="16dp"
+    android:layout_marginTop="16dp"
+    android:background="@drawable/rounded_lbl"
+    android:orientation="vertical"
+    android:paddingTop="10dp" >
+
+    <TextView
+        android:id="@+id/election_title_label"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#EAEAEA"
+        android:gravity="center_vertical|center_horizontal"
+        android:padding="8dp"
+        android:text=""
+        android:textColor="#878686"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/election_title_label_shadow"
+        android:layout_width="fill_parent"
+        android:layout_height="1dip"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:background="#DBDBDB" />
+
+    <RelativeLayout
+        android:id="@+id/candidate_list_item_details"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="2dp"
+        android:background="@drawable/rounded_lbl_bottom" >
+
+        <LinearLayout
+            android:id="@+id/triangle_lbl"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@color/light_blue" >
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/candidate_name_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="8dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="16dp"
+            android:background="@android:color/white"
+            android:text=""
+            android:textColor="#707070"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/candidate_party_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/candidate_name_text"
+            android:layout_centerHorizontal="true"
+            android:background="@android:color/white"
+            android:paddingBottom="8dp"
+            android:text=""
+            android:textColor="#8D8D8D"
+            android:textSize="18sp"
+            android:textStyle="normal" />
+    </RelativeLayout>
+
+</LinearLayout>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/vote_label"
+        android:layout_width="fill_parent"
+        android:layout_height="48dp"
+        android:background="@color/light_blue"
+        android:gravity="center_vertical|center_horizontal"
+        android:text=""
+        android:textColor="#ffffff"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/vote_label_shadow"
+        android:layout_width="fill_parent"
+        android:layout_height="2dip"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:background="#008EC2" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+		android:background="@android:color/white"	
+        android:layout_margin="15dp"
+        android:orientation="vertical" >		
+    <TextView
+            android:id="@+id/vote_txt_label"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_margin="8dp"
+            android:padding="8dp"
+            android:text=""
+            android:textColor="#8D8D8D"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/vote_signer_label"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:gravity="center_vertical|center_horizontal"
+        android:layout_margin="8dp"
+        android:padding="8dp"
+        android:text=""
+        android:textColor="#8D8D8D"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+	</LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/vote_btn_verify"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_vertical"
+            android:layout_marginBottom="0dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/rounded_btn"
+            android:padding="16dp"
+            android:text=""
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>
