@@ -186,6 +186,7 @@ public class BruteForceActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+        Util.stopSpinner(mLoadingSpinner);
 		if (countDownTimer != null) {
 			countDownTimer.cancel();
 		}

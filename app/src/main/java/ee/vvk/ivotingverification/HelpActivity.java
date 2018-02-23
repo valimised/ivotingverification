@@ -66,6 +66,12 @@ public class HelpActivity extends AppCompatActivity {
 		mLoadingSpinner = Util.startSpinner(HelpActivity.this, false);
 	}
 
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		Util.stopSpinner(mLoadingSpinner);
+	}
+
 	public boolean onOptionsItemSelected(MenuItem item){
 		int id = item.getItemId();
 		if (id == android.R.id.home) {

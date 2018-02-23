@@ -86,6 +86,12 @@ public class VoteDownloadActivity extends Activity {
 		}
 	}
 
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		Util.stopSpinner(mLoadingSpinner);
+	}
+
 	abstract class GetHtmlTask extends AsyncTask<Void, Void, ArrayList<Vote>> {
 
 		@Override
