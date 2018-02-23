@@ -77,7 +77,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 			C.configURL = Util.readRawTextFile(this.getApplicationContext(),
 					R.raw.config).trim();
 		}
-		Security.addProvider(new BouncyCastleProvider());
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 				WindowManager.LayoutParams.FLAG_FULLSCREEN);

@@ -69,7 +69,14 @@ public class Ocsp {
                 }
                 continue;
             }
-            byte[] dn = digest.digest(((X509Principal) requestedCert.getIssuerDN()).getEncoded());
+
+            byte[] dn;
+            try {
+                dn = digest.digest(((X509Principal) requestedCert.getIssuerDN()).getEncoded());
+            } catch (Exception e) {
+                dn = digest.digest(new X509Principal(true, requestedCert.getIssuerDN().getName()).getEncoded());
+            }
+
             if (!Arrays.equals(dn, id.getIssuerNameHash())) {
                 if (Util.DEBUGGABLE) {
                     Log.w(TAG, "Cert's and ocsp's issuer DN hash do not match");

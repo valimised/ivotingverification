@@ -28,11 +28,15 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import ee.vvk.ivotingverification.ErrorActivity;
@@ -111,6 +115,28 @@ public class Util {
 		CertificateFactory certificateFactory = CertificateFactory.getInstance("X509", "SC");
 		final byte[] content = readPemContent(certificatePem);
 		return (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(content));
+	}
+
+	public static boolean isSuitableX509Provider(X509Certificate cert) {
+		try {
+			cert.getPublicKey();
+			return true;
+		} catch (Exception ignored) {
+			return false;
+		}
+	}
+
+	public static List<Provider> getX509Providers() {
+		List<Provider> x509Providers = new ArrayList<>();
+		for (Provider provider : Security.getProviders()) {
+			for (Provider.Service service : provider.getServices()) {
+				if(service.getAlgorithm().equals("X509")) {
+					x509Providers.add(provider);
+					break;
+				}
+			}
+		}
+		return x509Providers;
 	}
 
 	private static byte[] readPemContent(String pem) throws IOException {

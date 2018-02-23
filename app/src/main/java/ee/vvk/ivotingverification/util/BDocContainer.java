@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
@@ -149,8 +150,23 @@ public class BDocContainer {
                 .getFirstChildElement("X509Data", NS_XMLDSIG)
                 .getFirstChildElement("X509Certificate", NS_XMLDSIG);
         CertificateFactory cf = CertificateFactory.getInstance("X.509", "SC");
-        cert = (X509Certificate)cf.generateCertificate(
-                new ByteArrayInputStream(Base64.decode(node.getValue(), Base64.DEFAULT)));
+        byte[] certData = Base64.decode(node.getValue(), Base64.DEFAULT);
+        cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(certData));
+
+        if (!Util.isSuitableX509Provider(cert)) {
+            boolean ok = false;
+            for (Provider provider: Util.getX509Providers()) {
+                cf = CertificateFactory.getInstance("X509", provider);
+                cert = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certData));
+                if (Util.isSuitableX509Provider(cert)) {
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok) {
+                throw new Exception("No suitable security provider");
+            }
+        }
 
         try {
             Util.verifyCertIssuerSig(cert, issuers);
