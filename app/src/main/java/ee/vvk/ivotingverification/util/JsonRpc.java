@@ -18,8 +18,16 @@ import java.util.Map;
 
 public class JsonRpc {
     private static final String TAG = "JSON-RPC";
-    private static final String DEVICE_INFO = String.format("%s,%s,%s (%s)",
-            "Android", Build.VERSION.SDK_INT, Build.MODEL, Build.PRODUCT);
+    private static final String DEVICE_INFO;
+
+    static {
+        String tmp = String.format("%s,%s,%s (%s)",
+                "Android", Build.VERSION.SDK_INT, Build.MODEL, Build.PRODUCT);
+        if (tmp.length() > 100) {
+            tmp = tmp.substring(0, 100);
+        }
+        DEVICE_INFO = tmp;
+    }
 
     public enum Method {
         VERIFY("Verify");
