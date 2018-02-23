@@ -10,7 +10,7 @@ public class Candidate {
     public final String name;
 
     public Candidate(String packed) {
-        String[] split = packed.split(Character.toString((char) 0x1F));
+        String[] split = packed.split(Character.toString((char) 0x1F), 3);
         if (split.length != 3) {
             throw new IllegalArgumentException("Bad candidate format: " + packed);
         }
