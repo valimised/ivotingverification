@@ -96,7 +96,7 @@
             android:layout_weight="2.5"
             android:gravity="center_vertical|center_horizontal"
             android:orientation="horizontal" >
-			
+
             <Button
                 android:id="@+id/btn_wifi"
                 android:layout_width="108dp"
@@ -110,6 +110,10 @@
                 android:textColor="@android:color/darker_gray"
                 android:textSize="22sp"
                 android:textStyle="bold"
+                android:paddingLeft="5dp"
+                android:paddingRight="5dp"
+                android:ellipsize="end"
+                android:singleLine="true"
                 android:visibility="gone" />
 
             <Button
@@ -124,7 +128,11 @@
                 android:textColor="@android:color/darker_gray"
                 android:textSize="22sp"
                 android:textStyle="bold"
-                android:visibility="gone" />			
+                android:paddingLeft="5dp"
+                android:paddingRight="5dp"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:visibility="gone" />
 
         </LinearLayout>
     </LinearLayout>

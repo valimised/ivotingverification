@@ -164,8 +164,9 @@ public class VoteDownloadActivity extends Activity {
 	private BDocContainer verifyRes(byte[] containerData, byte[] ocspData, byte[] regData) throws Exception {
 		ElGamalPub pub = new ElGamalPub(C.publicKey);
 		BDocContainer container = new BDocContainer(
-				new ByteArrayInputStream(containerData), pub.elId, Util.getEsteidCerts(this));
-		container.readAndValidate();
+				new ByteArrayInputStream(containerData), pub.elId);
+		container.parseContainer();
+		container.validateContainer(Util.getEsteidCerts(this));
 		signerCN = Util.getCN(container.cert);
 
 		JcaContentVerifierProviderBuilder builder = new JcaContentVerifierProviderBuilder().setProvider("SC");
@@ -176,7 +177,7 @@ public class VoteDownloadActivity extends Activity {
 		X509Certificate tspregCert = Util.loadCertificate(C.tspregServiceCert);
 		X509Certificate collectorCert = Util.loadCertificate(C.tspregClientCert);
 
-		long producedAt = Ocsp.verifyResponse(new ByteArrayInputStream(ocspData), ocspVerifierProviders, container.cert);
+		long producedAt = Ocsp.verifyResponse(new ByteArrayInputStream(ocspData), ocspVerifierProviders, container.cert, container.issuer);
 
 		long genTime = Pkix.verifyResponse(
 				regData,

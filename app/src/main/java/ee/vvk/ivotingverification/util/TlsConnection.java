@@ -52,7 +52,7 @@ public class TlsConnection {
                 return null;
             }
             socket.setSoTimeout(15000);
-            socket.setEnabledProtocols(socket.getSupportedProtocols());
+            socket.setEnabledProtocols(new String[]{"TLSv1.2"});
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 sslCertificateSocketFactory.setHostname(socket, hostName);

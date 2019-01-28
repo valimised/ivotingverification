@@ -91,6 +91,10 @@
                 android:textColor="@android:color/darker_gray"
                 android:textSize="22sp"
                 android:textStyle="bold"
+                android:paddingLeft="5dp"
+                android:paddingRight="5dp"
+                android:ellipsize="end"
+                android:singleLine="true"
                 android:visibility="gone"
                 android:filterTouchesWhenObscured="true" />
 
@@ -106,6 +110,10 @@
                 android:textColor="@android:color/darker_gray"
                 android:textSize="22sp"
                 android:textStyle="bold"
+                android:paddingLeft="5dp"
+                android:paddingRight="5dp"
+                android:ellipsize="end"
+                android:singleLine="true"
                 android:visibility="gone"
                 android:filterTouchesWhenObscured="true" />
         </LinearLayout>

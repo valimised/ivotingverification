@@ -1,6 +1,7 @@
 package ee.vvk.ivotingverification;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -8,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -170,8 +172,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	}
 
 	public void clickMoreButton(View view) {
-		Intent helpActivity = new Intent(this, HelpActivity.class);
-		startActivity(helpActivity);
+		Intent showHelp = new Intent(Intent.ACTION_VIEW, Uri.parse(C.helpURL));
+		try {
+			startActivity(showHelp);
+		} catch (ActivityNotFoundException e) {
+			// No browser installed? Not much we can do.
+		}
 	}
 
 	@Override

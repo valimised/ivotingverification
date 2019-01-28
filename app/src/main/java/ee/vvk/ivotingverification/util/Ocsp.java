@@ -2,6 +2,9 @@ package ee.vvk.ivotingverification.util;
 
 import android.util.Log;
 
+import org.spongycastle.asn1.x509.ExtendedKeyUsage;
+import org.spongycastle.asn1.x509.KeyPurposeId;
+import org.spongycastle.cert.X509CertificateHolder;
 import org.spongycastle.cert.ocsp.BasicOCSPResp;
 import org.spongycastle.cert.ocsp.CertificateID;
 import org.spongycastle.cert.ocsp.CertificateStatus;
@@ -9,6 +12,7 @@ import org.spongycastle.cert.ocsp.OCSPResp;
 import org.spongycastle.cert.ocsp.SingleResp;
 import org.spongycastle.jce.X509Principal;
 import org.spongycastle.operator.ContentVerifierProvider;
+import org.spongycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
 
 import java.io.InputStream;
 import java.security.MessageDigest;
@@ -20,7 +24,7 @@ public class Ocsp {
     private static final String TAG = "OCSP";
 
     public static long verifyResponse(InputStream response, List<ContentVerifierProvider> ocspVerifiers,
-                                      X509Certificate requestedCert) throws Exception {
+                                      X509Certificate requestedCert, X509Certificate issuerCert) throws Exception {
         OCSPResp ocspResp = new OCSPResp(response);
         if (ocspResp.getStatus() != OCSPResp.SUCCESSFUL) {
             throw new Exception("Ocsp response status value not 0: " + ocspResp.getStatus());
@@ -38,6 +42,11 @@ public class Ocsp {
                 break;
             }
         }
+        if (!verified) {
+            Log.i(TAG, "Preconfigured OCSP responders not suitable, trying AIA");
+            verified = checkAIAResponder(basicResp, issuerCert);
+        }
+
         if (!verified) {
             throw new Exception("Signature verification failed");
         }
@@ -87,5 +96,24 @@ public class Ocsp {
             return basicResp.getProducedAt().getTime();
         }
         throw new Exception("Couldn't verify ocsp response");
+    }
+
+    private static boolean checkAIAResponder(BasicOCSPResp basicResp, X509Certificate issuerCert) throws Exception {
+        JcaContentVerifierProviderBuilder builder = new JcaContentVerifierProviderBuilder().setProvider("SC");
+        ContentVerifierProvider issuerVerifier = builder.build(issuerCert);
+        for (X509CertificateHolder responder : basicResp.getCerts()) {
+            // is signed by same issuer as the cert whose ocsp be are checking
+            if (responder.isSignatureValid(issuerVerifier)) {
+                // and has proper signature of the responder
+                if (basicResp.isSignatureValid(builder.build(responder))) {
+                    ExtendedKeyUsage keyUsage = ExtendedKeyUsage.fromExtensions(responder.getExtensions());
+                    // and responder has proper key extension
+                    if (keyUsage.hasKeyPurposeId(KeyPurposeId.id_kp_OCSPSigning)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 }

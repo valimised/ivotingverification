@@ -19,7 +19,7 @@ public class C {
 
 	public static String configURL = "";
 
-	public static String[] ocspServiceCertArray = new String[] {""};
+	public static String[] ocspServiceCertArray = new String[0];
 
 	public static String tspregServiceCert = "";
 

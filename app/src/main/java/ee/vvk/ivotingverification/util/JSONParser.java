@@ -195,10 +195,12 @@ public class JSONParser {
 			C.connectionTimeout1 = params.optInt("con_timeout_1", C.connectionTimeout1);
 			C.connectionTimeout2 = params.optInt("con_timeout_2", C.connectionTimeout2);
 			C.publicKey = params.optString("public_key", C.publicKey);
-			jsonArray = params.getJSONArray("ocsp_service_cert");
-			C.ocspServiceCertArray = new String[jsonArray.length()];
-			for(int i = 0; i < jsonArray.length(); i++) {
-				C.ocspServiceCertArray[i] = jsonArray.getString(i);
+			jsonArray = params.optJSONArray("ocsp_service_cert");
+			if (jsonArray != null) {
+				C.ocspServiceCertArray = new String[jsonArray.length()];
+				for (int i = 0; i < jsonArray.length(); i++) {
+					C.ocspServiceCertArray[i] = jsonArray.getString(i);
+				}
 			}
 			C.tspregServiceCert = params.optString("tspreg_service_cert", C.tspregServiceCert);
 			C.tspregClientCert = params.optString("tspreg_client_cert", C.tspregClientCert);

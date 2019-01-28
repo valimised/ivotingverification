@@ -3,23 +3,28 @@ package ee.vvk.ivotingverification.util;
 import android.net.Uri;
 import android.util.Base64;
 import android.util.Log;
+import android.util.Pair;
 
 import org.spongycastle.asn1.ASN1EncodableVector;
 import org.spongycastle.asn1.ASN1Integer;
 import org.spongycastle.asn1.DERSequence;
+import org.spongycastle.asn1.x509.Certificate;
+import org.spongycastle.asn1.x509.SubjectPublicKeyInfo;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.RSAPublicKeySpec;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -42,6 +47,8 @@ public class BDocContainer {
             "xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" " +
             "xmlns:xades=\"http://uri.etsi.org/01903/v1.3.2#\"";
     private static final int MAX_FILE_SIZE = 1024 * 1024; // 1MB
+    private static final String RSA_OID = "1.2.840.113549.1.1.1";
+
 
     private String ballotNameRegex;
 
@@ -52,15 +59,15 @@ public class BDocContainer {
 
     private final MessageDigest sha256;
     private final ZipInputStream zip;
-    private final X509Certificate[] issuers;
     public byte[] manifest;
     public byte[] signature;
     private Map<String, byte[]> votes = new HashMap<>();
     public SigningAlg signingAlg;
     public X509Certificate cert;
+    public X509Certificate issuer;
     private String canonSigFileStr;
 
-    public BDocContainer(InputStream in, String electionName, X509Certificate... issuers) {
+    public BDocContainer(InputStream in, String electionName) {
         try {
             sha256 = MessageDigest.getInstance("SHA256");
         } catch (NoSuchAlgorithmException e) {
@@ -69,12 +76,6 @@ public class BDocContainer {
         }
         zip = new ZipInputStream(in);
         this.ballotNameRegex = String.format("^%s\\.[^.]+\\.ballot$", electionName);
-        this.issuers = issuers;
-    }
-
-    public void readAndValidate() throws Exception {
-        parseContainer();
-        validateContainer();
     }
 
     public Map<String, byte[]> getVotes() {
@@ -87,7 +88,7 @@ public class BDocContainer {
     }
 
 
-    private void parseContainer() throws Exception {
+    public void parseContainer() throws Exception {
         ZipEntry entry;
         while ((entry = zip.getNextEntry()) != null)
         {
@@ -116,7 +117,7 @@ public class BDocContainer {
         }
     }
 
-    private void validateContainer() throws Exception {
+    public void validateContainer(X509Certificate... issuers) throws Exception {
         Document doc = buildDoc();
         Element root = doc.getRootElement();
         canonSigFileStr = new String(canonicalizeDocument(doc));
@@ -127,7 +128,7 @@ public class BDocContainer {
         }
         byte[] signedInfo = getSignedInfo(canonSigFileStr);
         String sig = getSignature(root);
-        PublicKey pk = getKey(root);
+        PublicKey pk = getKey(root, issuers);
         verifySignature(signedInfo, sig, pk);
         if (Util.DEBUGGABLE) {
             Log.i(TAG, "Container signature correct");
@@ -144,7 +145,7 @@ public class BDocContainer {
         return str.getBytes();
     }
 
-    private PublicKey getKey(Element root) throws Exception {
+    private PublicKey getKey(Element root, X509Certificate... issuers) throws Exception {
         Element node = root.getFirstChildElement("Signature", NS_XMLDSIG)
                 .getFirstChildElement("KeyInfo", NS_XMLDSIG)
                 .getFirstChildElement("X509Data", NS_XMLDSIG)
@@ -153,27 +154,69 @@ public class BDocContainer {
         byte[] certData = Base64.decode(node.getValue(), Base64.DEFAULT);
         cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(certData));
 
-        if (!Util.isSuitableX509Provider(cert)) {
-            boolean ok = false;
-            for (Provider provider: Util.getX509Providers()) {
-                cf = CertificateFactory.getInstance("X509", provider);
-                cert = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certData));
-                if (Util.isSuitableX509Provider(cert)) {
-                    ok = true;
-                    break;
-                }
-            }
-            if (!ok) {
-                throw new Exception("No suitable security provider");
-            }
-        }
-
         try {
-            Util.verifyCertIssuerSig(cert, issuers);
+            issuer = Util.verifyCertIssuerSig(cert, issuers);
         } catch (Exception e) {
             throw new Exception("Vote signer cert not properly signed by any of ESTEID certs");
         }
-        return cert.getPublicKey();
+
+        try {
+            return cert.getPublicKey();
+        } catch (Exception e) {
+            // This was probably caused by one of the misencoded Estonian RSA public keys: either
+            // the modulus or exponent has an extra 0x00-byte prefix (negative encodings are
+            // handled by SC itself). Parse the public key manually, resolving these errors. If it
+            // turns out, that our assumption was wrong, then rethrow the original error.
+            try {
+                Certificate c = Certificate.getInstance(certData);
+                SubjectPublicKeyInfo spki = c.getSubjectPublicKeyInfo();
+                if (!RSA_OID.equals(spki.getAlgorithm().getAlgorithm().getId())) {
+                    throw new Exception("Public key algorithm not RSA");
+                }
+                byte[] pub = spki.getPublicKeyData().getOctets();
+
+                Pair<Integer, Integer> modexpRange = asn1Range(0x30, pub);
+                if (modexpRange.second != pub.length) {
+                    throw new Exception("Public key has trailing garbage");
+                }
+                byte[] modexp = Arrays.copyOfRange(pub, modexpRange.first, modexpRange.second);
+
+                Pair<Integer, Integer> modRange = asn1Range(0x02, modexp);
+                byte[] mod = Arrays.copyOfRange(modexp, modRange.first, modRange.second);
+
+                byte[] exp = Arrays.copyOfRange(modexp, modRange.second, modexp.length);
+                Pair<Integer, Integer> expRange = asn1Range(0x02, exp);
+                if (expRange.second != exp.length) {
+                    throw new Exception("RSA sequence has trailing garbage");
+                }
+                exp = Arrays.copyOfRange(exp, expRange.first, expRange.second);
+
+                KeyFactory kf = KeyFactory.getInstance("RSA", "SC");
+                return kf.generatePublic(new RSAPublicKeySpec(
+                        new BigInteger(1, mod), new BigInteger(1, exp)));
+            } catch (Exception ignored) {
+                if (Util.DEBUGGABLE) {
+                    Log.d(TAG, "Ignored Exception, rethrowing original", ignored);
+                }
+                throw e;
+            }
+        }
+    }
+
+    private static Pair<Integer, Integer> asn1Range(int tag, byte[] der) throws Exception {
+        if (der[0] != tag) {
+            throw new Exception(String.format("ASN.1 tag 0x%x is not 0x%x", der[0], tag));
+        }
+        int length = der[1] & 0xff;
+        int from = 2;
+        if (length > 127) {
+            int size = length & 0x7f;
+            length = 0;
+            for (; size > 0; size--) {
+                length = (length << 8) + (der[from++] & 0xff);
+            }
+        }
+        return new Pair<>(from, from + length);
     }
 
     private String getSignature(Element root) {
@@ -250,7 +293,7 @@ public class BDocContainer {
             String uri = references.get(i).getAttributeValue("URI");
             String expectedDigestValue = references.get(i)
                     .getFirstChildElement("DigestValue", NS_XMLDSIG).getValue().replace("\n", "");
-            if (type.equals("http://uri.etsi.org/01903#SignedProperties")) {
+            if (type != null && type.equals("http://uri.etsi.org/01903#SignedProperties")) {
                 if (!expectedDigestValue.equals(signedPropertiesDigest)) {
                     if (Util.DEBUGGABLE) {
                         Log.e(TAG, "Signature and computed digest values for 'SignedProperties' do not match\n" +

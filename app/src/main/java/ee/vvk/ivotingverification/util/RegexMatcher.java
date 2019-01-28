@@ -26,12 +26,21 @@ public class RegexMatcher {
 		if (splitQr.length != 3) {
 			return false;
 		}
-		// Session log ID, seed and session ID are base64 encoded
-		if (!splitQr[1].matches(BASE_64_REGEX) || !splitQr[2].matches(BASE_64_REGEX)) {
+		// Session log ID, seed and session ID are base64 encoded with
+		// maximum encoded length 24 for IDs.
+		if (!isBase64(splitQr[0], 24) || !isBase64(splitQr[1]) || !isBase64(splitQr[2], 24)) {
 			return false;
 		}
 
 		return true;
+	}
+
+	private static boolean isBase64(String s) {
+		return s.matches(BASE_64_REGEX);
+	}
+
+	private static boolean isBase64(String s, int maxlen) {
+		return isBase64(s) && s.length() <= maxlen;
 	}
 
 	public static boolean isValidUTF8(final byte[] bytes) {
