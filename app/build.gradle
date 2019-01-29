@@ -8,8 +8,8 @@ android {
         applicationId "ee.ivxv.ivotingverification"
         minSdkVersion 16
         targetSdkVersion 28
-        versionCode 24
-        versionName "3.1.10"
+        versionCode 25
+        versionName "3.1.11"
     }
 
     buildTypes {

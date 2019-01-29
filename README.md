@@ -12,8 +12,7 @@ Reproducible building
 
 The source code published in this repository is enough to reproduce the APKs distributed via Google Play Store.
 
-The app is published here: https://play.google.com/store/apps/details?id=ee.ivxv.ivotingverification&hl=en.
-Current APK version is 22 (git tag KOV2017-APK-22). It is also possible to rebuild APK version 18 (git tag KOV2017-APK-18). Both APKs were used during KOV2017 election.
+The app is published here: https://play.google.com/store/apps/details?id=ee.ivxv.ivotingverification&hl=en. Current APK version is 25 (git tag RK2019-APK-25) used during RK2019 election.
 
 Steps to building the project and verifying the codebase matches the published APKs.
 
@@ -27,9 +26,9 @@ Build pre-requisites:
       * http://central.maven.org/maven2/com/google/zxing/core/3.1.0/core-3.1.0.jar
 
 Building:
-  * Gradle buildsystem is used, actual version is specified in gradle/wrapper/gradle-wrapper.properties (currently 3.5)
+  * Gradle buildsystem is used, actual version is specified in gradle/wrapper/gradle-wrapper.properties (currently 4.7)
   * Run gradlew (gradlew.bat on Windows) script in the root directory with 'assembleRelease' argument
-  * Output apk will be located at app/build/outputs/apk/app-release-unsigned.apk
+  * Output apk will be located at app/build/outputs/apk/release/app-release-unsigned.apk
 
 Comparing APKs:
 
