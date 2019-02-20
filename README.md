@@ -12,7 +12,7 @@ Reproducible building
 
 The source code published in this repository is enough to reproduce the APKs distributed via Google Play Store.
 
-The app is published here: https://play.google.com/store/apps/details?id=ee.ivxv.ivotingverification&hl=en. Current APK version is 25 (git tag RK2019-APK-25) used during RK2019 election.
+The app is published here: https://play.google.com/store/apps/details?id=ee.ivxv.ivotingverification&hl=en. Current APK version is 26 (git tag RK2019-APK-26) used during RK2019 election.
 
 Steps to building the project and verifying the codebase matches the published APKs.
 

@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
  */
 public class RegexMatcher {
 
+	private static final String SESSION_ID_REGEX = "^[0-9a-f]{32}$";
 	private static final String BASE_64_REGEX =
 			"^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$";
 
@@ -26,9 +27,15 @@ public class RegexMatcher {
 		if (splitQr.length != 3) {
 			return false;
 		}
-		// Session log ID, seed and session ID are base64 encoded with
-		// maximum encoded length 24 for IDs.
-		if (!isBase64(splitQr[0], 24) || !isBase64(splitQr[1]) || !isBase64(splitQr[2], 24)) {
+
+		// Session log ID is hex-encoding of 16-byte string.
+		if (!splitQr[0].matches(SESSION_ID_REGEX)) {
+			return false;
+		}
+
+		// Random seed and vote ID are base64 encoded with maximum
+		// encoded length 24 for the vote ID (decoded length 16).
+		if (!isBase64(splitQr[1]) || !isBase64(splitQr[2], 24)) {
 			return false;
 		}
 
