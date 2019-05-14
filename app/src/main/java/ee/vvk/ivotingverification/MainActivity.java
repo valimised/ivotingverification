@@ -1,5 +1,6 @@
 package ee.vvk.ivotingverification;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -25,7 +26,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.apache.http.HttpResponse;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.File;
@@ -60,8 +60,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
 	private Button buttonMore;
 	private Button buttonNext;
-
-	private HttpResponse response;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -102,7 +100,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
 		if (networkInfo != null && networkInfo.isConnected()) {
-			urlConnect();
+			new GetConfigTask().execute();
 		} else {
 			Util.startErrorIntent(MainActivity.this, C.noNetworkMessage, false);
 		}
@@ -344,7 +342,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		frameImage.setVisibility(View.GONE);
 	}
 
-	abstract class GetHtmlTask extends AsyncTask<Void, Void, String> {
+	@SuppressLint("StaticFieldLeak")
+	private class GetConfigTask extends AsyncTask<Void, Void, String> {
 
 		@Override
 		protected void onPreExecute() {
@@ -352,101 +351,46 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		}
 
 		@Override
-		protected void onPostExecute(String result) {
-
+		protected String doInBackground(Void... arg0) {
 			try {
-				try {
-					if (result == null && Util.DEBUGGABLE)
-						Log.d(TAG, "result is null");
-					new JSONParser(result);
-				} catch (Exception e) {
-					Util.startErrorIntent(MainActivity.this,
-							C.badServerResponseMessage, true);
-					if (Util.DEBUGGABLE) {
-						Log.e(TAG, e.getMessage());
-					}
-					finish();
-				}
-				String locale = java.util.Locale.getDefault().toString()
-						.substring(0, 2);
-				if (!C.languages.isEmpty() && C.languages.contains(locale)){
-					C.forLanguages = true;
-					C.langURL = C.configURL.replace("MultiLang.json", locale.toUpperCase() + ".json");
-					urlConnectLang();
-				}else{
-					Util.stopSpinner(mLoadingSpinner);
-					initMainWindow();
-				}
+				return new HttpRequest(MainActivity.this).get(C.configURL);
 			} catch (Exception e) {
 				if (Util.DEBUGGABLE) {
-					Log.e(TAG, e.getMessage());
+					Log.e(TAG, "GET " + C.configURL + ": " + e.getMessage(), e);
 				}
-			}
-		}
-	}
-
-	private void urlConnect() {
-		new GetHtmlTask() {
-
-			@Override
-			protected String doInBackground(Void... arg0) {
-				try {
-					response = new HttpRequest(MainActivity.this).get(
-							C.configURL, null);
-					System.setProperty("http.keepAlive", "false");
-				} catch (Exception e) {
-					if (Util.DEBUGGABLE) {
-						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
-					}
-					return null;
-				}
-				try {
-					if (response == null) {
-						return null;
-					} else {
-						return Util.readLines(
-								response.getEntity().getContent(),
-								Util.ENCODING);
-					}
-				} catch (IllegalStateException | IOException e) {
-					if (Util.DEBUGGABLE) {
-						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
-					}
-					Util.startErrorIntent(MainActivity.this,
-							C.badServerResponseMessage, true);
-
-				}
-
 				return null;
 			}
-		}.execute();
-	}
-	
-	abstract class GetHtmlTaskLang extends AsyncTask<Void, Void, String> {
-
-		@Override
-		protected void onPreExecute() {
-			
 		}
 
 		@Override
 		protected void onPostExecute(String result) {
 
 			try {
-				try {
-					if (result == null && Util.DEBUGGABLE)
-						Log.d(TAG, "result is null");
-					new JSONParser(result);
-				} catch (Exception e) {
-					onDestroy();
+				if (result == null) {
 					Util.startErrorIntent(MainActivity.this,
-							C.badServerResponseMessage, true);
+							C.getConfigMessage, true);
+					return;
+				}
+				try {
+					JSONParser.parseConfig(result);
+				} catch (Exception e) {
 					if (Util.DEBUGGABLE) {
-						Log.e(TAG, e.getMessage());
+						Log.e(TAG, e.getMessage(), e);
+					}
+					Util.startErrorIntent(MainActivity.this,
+							C.badConfigMessage, true);
+					return;
+				}
+				String locale = java.util.Locale.getDefault().toString();
+				if (locale.length() >= 2) {
+					String lang = locale.substring(0, 2);
+					if (C.languages.contains(lang)) {
+						C.langURL = C.configURL.replace("MultiLang.json", lang.toUpperCase() + ".json");
+						new GetLangConfigTask().execute();
+						return;
 					}
 				}
 				Util.stopSpinner(mLoadingSpinner);
-				C.forLanguages = false;
 				initMainWindow();
 			} catch (Exception e) {
 				if (Util.DEBUGGABLE) {
@@ -455,40 +399,49 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 			}
 		}
 	}
-	private void urlConnectLang() {
-		new GetHtmlTaskLang() {
 
-			@Override
-			protected String doInBackground(Void... arg0) {
-				try {
-					response = new HttpRequest(MainActivity.this).get(
-							C.langURL, null);
-					System.setProperty("http.keepAlive", "false");
-				} catch (Exception e) {
-					if (Util.DEBUGGABLE) {
-						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
-					}
-					return null;
+	@SuppressLint("StaticFieldLeak")
+	private class GetLangConfigTask extends AsyncTask<Void, Void, String> {
+
+		@Override
+		protected String doInBackground(Void... arg0) {
+			try {
+				return new HttpRequest(MainActivity.this).get(C.langURL);
+			} catch (Exception e) {
+				if (Util.DEBUGGABLE) {
+					Log.e(TAG, "GET " + C.langURL + ": " + e.getMessage(), e);
 				}
-				try {
-					if (response == null) {
-						return null;
-					} else {
-						return Util.readLines(
-								response.getEntity().getContent(),
-								Util.ENCODING);
-					}
-				} catch (IllegalStateException | IOException e) {
-					if (Util.DEBUGGABLE) {
-						Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
-					}
-					Util.startErrorIntent(MainActivity.this,
-							C.badServerResponseMessage, true);
-
-				}
-
 				return null;
 			}
-		}.execute();
+		}
+
+		@Override
+		protected void onPostExecute(String result) {
+
+			try {
+				if (result == null) {
+					Util.startErrorIntent(MainActivity.this,
+							C.getConfigMessage, true);
+					return;
+				}
+				try {
+					JSONParser.parseConfig(result, true);
+				} catch (Exception e) {
+					if (Util.DEBUGGABLE) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+					Util.startErrorIntent(MainActivity.this,
+							C.badConfigMessage, true);
+					return;
+				}
+				Util.stopSpinner(mLoadingSpinner);
+				initMainWindow();
+			} catch (Exception e) {
+				if (Util.DEBUGGABLE) {
+					Log.e(TAG, e.getMessage());
+				}
+			}
+		}
 	}
+
 }

@@ -13,9 +13,9 @@ import java.util.List;
  */
 public class C {
 
-	public static String[] verificationUrlArray = new String[] {""};
+	public static String[] verificationUrlArray = new String[0];
 
-	public static String[] verificationTlsArray = new String[] {""};
+	public static String[] verificationTlsArray = new String[0];
 
 	public static String configURL = "";
 
@@ -24,18 +24,18 @@ public class C {
 	public static String tspregServiceCert = "";
 
 	public static String tspregClientCert = "";
-	
+
 	public static String langURL = "";
-	
+
 	public static String helpURL = "https://www.valimised.ee/";
 
 	public final static String trustStorePass = "secret";
-	
+
 	public static String trustStoreURL = "";
 
 	public static Typeface typeFace = Typeface.DEFAULT;
 
-	public static String welcomeMessage = "";
+	public static String welcomeMessage = "Hääle kontollimiseks suunake nutiseadme kaamera arvuti ekraanil kuvatavale QR-koodile";
 
 	public static String loading = "Laadib...";
 
@@ -85,9 +85,9 @@ public class C {
 
 	public static String lblVote = "Hääle kontrollimine";
 
-	public static String lblVoteTxt = "";
+	public static String lblVoteTxt = "Teie QR-koodile vastav hääl on talletatud valimiste serveris";
 
-	public static String lblVoteSigner = "";
+	public static String lblVoteSigner = "Hääle allkirjastaja: ";
 
 	public static String lblChoice = "Tuvastatud valik";
 
@@ -131,20 +131,22 @@ public class C {
 
 	public static String noNetworkMessage = "Veenduge, et nutiseadme andmeside on võimaldatud";
 
+	public static String getConfigMessage = "Valimiste seadistuse laadimine ebaõnnestus";
+
+	public static String badConfigMessage = "Valimiste seadistuse viga";
+
 	public static String problemQrCodeMessage = "QR koodi ei õnnestunud tuvastada";
+
+	public static String sendServerRequestMessage = "Valimiste süsteemiga ühendamine ebaõnnestus";
 
 	public static String badServerResponseMessage = "Tehniline viga, palun teavitage valimiste läbiviijat";
 
 	public static String badDeviceMessage = "Selle seadmega ei ole võimalik verifitseerimist läbi viia";
 
-	public static String badVerificationMessage = "";
-
 	public static String cameraPermissionRequired = "Rakenduse kasutamiseks peab olema kaamera kasutamine lubatud";
-	
+
 	public static boolean fromPro = false;
-	
-	public static boolean forLanguages = false;
-	
+
 	public static List<String> languages = new ArrayList<>();
 
 	public static HashMap<String, String> elections = new HashMap<>();

@@ -1,21 +1,13 @@
 package ee.vvk.ivotingverification.util;
 
 import android.app.Activity;
-import android.content.Context;
 import android.util.Log;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpVersion;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.conn.ssl.StrictHostnameVerifier;
-import org.apache.http.entity.BasicHttpEntity;
-import org.apache.http.message.BasicHttpResponse;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
@@ -37,103 +29,34 @@ import javax.net.ssl.TrustManagerFactory;
 public class HttpRequest {
 	private static String TAG = "HttpRequest";
 
-	private Context context;
-	private SSLSocketFactory sslfactory;
+	private SSLSocketFactory sslFactory;
 
-	public HttpRequest(Context cx) {
-		this.context = cx;
-		this.sslfactory = null;
-
-		try {
-			TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
-			tmf.init(Util.loadTrustStore((Activity) context));
-			sslfactory = new TLSv12SocketFactory(null, tmf.getTrustManagers(), null);
-		} catch (Exception e) {
-			if (Util.DEBUGGABLE) {
-				Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
-			}
-			Util.startErrorIntent((Activity) context,
-					C.badServerResponseMessage, true);
-		}
+	public HttpRequest(Activity context) throws Exception {
+		TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
+		tmf.init(Util.loadTrustStore(context));
+		this.sslFactory = new TLSv12SocketFactory(null, tmf.getTrustManagers(), null);
 	}
 
-	public HttpResponse post(String url,
-			List<NameValuePair> headerNameValuePairs,
-			List<NameValuePair> entryNameValuePairs) {
-
-		try {
-
-			UrlEncodedFormEntity ent = new UrlEncodedFormEntity(
-					entryNameValuePairs);
-			URL request = new URL(url);
-			HttpsURLConnection urlConnection = (HttpsURLConnection) request
-					.openConnection();
-			urlConnection.setDoOutput(true);
-			urlConnection.setChunkedStreamingMode(0);
-
-			urlConnection.setHostnameVerifier(new StrictHostnameVerifier());
-			urlConnection.setSSLSocketFactory(sslfactory);
-			urlConnection.setConnectTimeout(15000);
-
-			OutputStream os = urlConnection.getOutputStream();
-			ent.writeTo(os);
-
-			InputStream in = urlConnection.getInputStream();
-			BasicHttpEntity res = new BasicHttpEntity();
-			res.setContent(in);
-			HttpResponse response = new BasicHttpResponse(HttpVersion.HTTP_1_1,
-					urlConnection.getResponseCode(), "");
-			response.setEntity(res);
-
-			if (Util.DEBUGGABLE) {
-				printResponseHeader(urlConnection);
-			}
-			return response;
-
-		} catch (Exception e) {
-			if (Util.DEBUGGABLE) {
-				Log.e(TAG, "POST Error (" + e.getMessage() + ") URL: " + url);
-			}
-			Util.startErrorIntent((Activity) context,
-					C.badServerResponseMessage, true);
+	public String get(String url) throws IOException {
+		URL request = new URL(url);
+		if (!"https".equals(request.getProtocol())) {
+			throw new MalformedURLException(url);
 		}
-		return null;
-	}
-
-	public HttpResponse get(String url, List<NameValuePair> headerNameValuePairs) {
-
+		HttpsURLConnection urlConnection = (HttpsURLConnection) request.openConnection();
 		try {
-			URL request = new URL(url);
-			HttpsURLConnection urlConnection = (HttpsURLConnection) request
-					.openConnection();
 			System.setProperty("http.keepAlive", "false");
 			urlConnection.setHostnameVerifier(new StrictHostnameVerifier());
-			urlConnection.setSSLSocketFactory(sslfactory);
+			urlConnection.setSSLSocketFactory(sslFactory);
 			urlConnection.setConnectTimeout(15000);
 
-			InputStream in = urlConnection.getInputStream();
-
-			BasicHttpEntity res = new BasicHttpEntity();
-			res.setContent(in);
-			HttpResponse response = new BasicHttpResponse(HttpVersion.HTTP_1_1,
-					urlConnection.getResponseCode(), "");
-			response.setEntity(res);
-
 			if (Util.DEBUGGABLE) {
+				urlConnection.connect(); // Explicit connect necessary for getHeaderFields.
 				printResponseHeader(urlConnection);
-
 			}
-			return response;
-
-		} catch (Exception e) {
-			if (Util.DEBUGGABLE) {
-				Log.e(TAG, "GET Error (" + e.getMessage() + ") URL: " + url);
-			}
-
-			Util.startErrorIntent((Activity) context,
-					C.badServerResponseMessage, true);
+			return Util.readLines(urlConnection.getInputStream(), Util.ENCODING);
+		} finally {
+			urlConnection.disconnect();
 		}
-		return null;
 	}
 
 	private void printResponseHeader(URLConnection urlConnection) {
@@ -149,7 +72,7 @@ public class HttpRequest {
 	private class TLSv12SocketFactory extends SSLSocketFactory {
 		private SSLSocketFactory factory;
 
-		public TLSv12SocketFactory(KeyManager[] km, TrustManager[] tm, SecureRandom random)
+		TLSv12SocketFactory(KeyManager[] km, TrustManager[] tm, SecureRandom random)
 				throws NoSuchAlgorithmException, KeyManagementException {
 			SSLContext sslcontext = SSLContext.getInstance("TLSv1.2");
 			sslcontext.init(km, tm, random);
@@ -195,7 +118,7 @@ public class HttpRequest {
 		}
 
 		private Socket tlsv12(Socket socket) {
-			if (socket != null && socket instanceof SSLSocket) {
+			if (socket instanceof SSLSocket) {
 				((SSLSocket) socket).setEnabledProtocols(new String[]{"TLSv1.2"});
 			}
 			return socket;

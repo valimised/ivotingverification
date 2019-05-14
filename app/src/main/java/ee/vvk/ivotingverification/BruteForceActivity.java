@@ -1,5 +1,6 @@
 package ee.vvk.ivotingverification;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -127,18 +128,85 @@ public class BruteForceActivity extends Activity {
 				Log.d(TAG, "Bad public key: " + e.getMessage(), e);
 			}
 			Util.startErrorIntent(BruteForceActivity.this,
-					C.badServerResponseMessage, true);
+					C.badConfigMessage, true);
 			return;
 		}
-		doBruteForce();
+		new BruteForceTask().execute();
 	}
 
-	abstract class GetBruteForceTask extends
-			AsyncTask<Void, Void, ArrayList<Candidate>> {
+	@SuppressLint("StaticFieldLeak")
+	private class BruteForceTask extends AsyncTask<Void, Void, ArrayList<Candidate>> {
 
 		@Override
 		protected void onPreExecute() {
 			mLoadingSpinner = Util.startSpinner(BruteForceActivity.this, false);
+		}
+
+		@Override
+		protected ArrayList<Candidate> doInBackground(Void... arg0) {
+			try {
+				ArrayList<Candidate> result = new ArrayList<>();
+				for (Vote vote: voteList) {
+					BigInteger choice = getChoice(vote.vote);
+
+					BigInteger factor = pub.key.modPow(new BigInteger(1, rnd), pub.p);
+					BigInteger factorInverse = factor.modInverse(pub.p);
+					BigInteger s = factorInverse.multiply(choice).mod(pub.p);
+					if (!s.modPow(pub.q, pub.p).equals(BigInteger.ONE)) {
+						if (Util.DEBUGGABLE) {
+							Log.d(TAG, "Error: Plaintext is not quadratic residue (s.modPow(q,p) != 1)");
+						}
+						return null;
+					}
+					BigInteger m = s.compareTo(pub.q) == 1 ? pub.p.subtract(s) : s;
+					String decChoice = stripPadding(m.toByteArray());
+
+					if (decChoice.equals("")) {
+						result.add(Candidate.NO_CHOICE);
+					} else {
+						result.add(new Candidate(decChoice));
+					}
+				}
+				return result;
+			} catch (Exception e) {
+				if (Util.DEBUGGABLE) {
+					Log.d(TAG, "Error: " + e.getMessage(), e);
+				}
+				return null;
+			}
+		}
+
+		private BigInteger getChoice(byte[] in) throws IOException {
+			ASN1InputStream bIn = new ASN1InputStream(new ByteArrayInputStream(in));
+			ASN1Sequence parentObj = (ASN1Sequence) ((ASN1Sequence) bIn.readObject()).getObjectAt(1);
+			String c2 = parentObj.getObjectAt(1).toString();
+			return new BigInteger(c2, 10);
+		}
+
+		private String stripPadding(byte[] in) throws Exception {
+			if (in.length < 2) {
+				throw new Exception("Source message can not contain padding");
+			}
+			// As the plaintext byte array is obtained from BigInteger, leading 0 is omitted
+			if (in.length + 1 != pub.p.bitLength() / 8) {
+				throw new Exception("Incorrect plaintext length");
+			}
+			if (in[0] != 0x01) {
+				throw new Exception("Incorrect padding head");
+			}
+			for (int i = 1; i < in.length; i++) {
+				switch (in[i]) {
+					case 0:
+						// found padding end
+						return new String(Arrays.copyOfRange(in, i + 1, in.length));
+					case (byte) 0xff:
+						continue;
+					default:
+						// incorrect padding byte
+						throw new Exception("Incorrect padding byte");
+				}
+			}
+			throw new Exception("Padding unexpected");
 		}
 
 		@Override
@@ -165,7 +233,7 @@ public class BruteForceActivity extends Activity {
 				countDownTimer.start();
 			} else {
 				Util.startErrorIntent(BruteForceActivity.this,
-						C.badVerificationMessage, true);
+						C.badServerResponseMessage, true);
 			}
 		}
 	}
@@ -190,78 +258,6 @@ public class BruteForceActivity extends Activity {
 		if (countDownTimer != null) {
 			countDownTimer.cancel();
 		}
-	}
-
-	private void doBruteForce() {
-		new GetBruteForceTask() {
-
-			@Override
-			protected ArrayList<Candidate> doInBackground(Void... arg0) {
-				try {
-					ArrayList<Candidate> result = new ArrayList<>();
-					for (Vote vote: voteList) {
-						BigInteger choice = getChoice(vote.vote);
-
-						BigInteger factor =	pub.key.modPow(new BigInteger(1, rnd), pub.p);
-						BigInteger factorInverse = factor.modInverse(pub.p);
-						BigInteger s = factorInverse.multiply(choice).mod(pub.p);
-						if (!s.modPow(pub.q, pub.p).equals(BigInteger.ONE)) {
-							if (Util.DEBUGGABLE) {
-								Log.d(TAG, "Error: Plaintext is not quadratic residue (s.modPow(q,p) != 1)");
-							}
-							return null;
-						}
-						BigInteger m = s.compareTo(pub.q) == 1 ? pub.p.subtract(s) : s;
-						String decChoice = stripPadding(m.toByteArray());
-
-						if (decChoice.equals("")) {
-							result.add(Candidate.NO_CHOICE);
-						} else {
-							result.add(new Candidate(decChoice));
-						}
-					}
-					return result;
-				} catch (Exception e) {
-					if (Util.DEBUGGABLE) {
-						Log.d(TAG, "Error: " + e.getMessage(), e);
-					}
-					return null;
-				}
-			}
-		}.execute();
-	}
-
-	private BigInteger getChoice(byte[] in) throws IOException {
-		ASN1InputStream bIn = new ASN1InputStream(new ByteArrayInputStream(in));
-		ASN1Sequence parentObj = (ASN1Sequence) ((ASN1Sequence) bIn.readObject()).getObjectAt(1);
-		String c2 = parentObj.getObjectAt(1).toString();
-		return new BigInteger(c2, 10);
-	}
-
-	private String stripPadding(byte[] in) throws Exception {
-		if (in.length < 2) {
-			throw new Exception("Source message can not contain padding");
-		}
-		// As the plaintext byte array is obtained from BigInteger, leading 0 is omitted
-		if (in.length + 1 != pub.p.bitLength() / 8) {
-			throw new Exception("Incorrect plaintext length");
-		}
-		if (in[0] != 0x01) {
-			throw new Exception("Incorrect padding head");
-		}
-		for (int i = 1; i < in.length; i++) {
-			switch (in[i]) {
-				case 0:
-					// found padding end
-					return new String(Arrays.copyOfRange(in, i + 1, in.length));
-				case (byte) 0xff:
-					continue;
-				default:
-					// incorrect padding byte
-					throw new Exception("Incorrect padding byte");
-			}
-		}
-		throw new Exception("Padding unexpected");
 	}
 
 	public class CustomCountDownTimer extends CountDownTimer {

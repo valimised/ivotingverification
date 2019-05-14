@@ -86,16 +86,8 @@ public class VoteActivity extends Activity {
 				clickVerifyButton(v);
 			}
 		});
-		try {
-			btnVoteVerify.setClickable(true);
-			btnVoteVerify.setVisibility(android.view.View.VISIBLE);
-		} catch (Exception e) {
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Parser exception. Vote could not be parsed.");
-			}
-			Util.startErrorIntent(VoteActivity.this,
-					C.badServerResponseMessage, true);
-		}
+		btnVoteVerify.setClickable(true);
+		btnVoteVerify.setVisibility(android.view.View.VISIBLE);
 	}
 
 	@Override

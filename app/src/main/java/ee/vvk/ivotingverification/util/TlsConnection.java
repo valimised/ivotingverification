@@ -1,14 +1,16 @@
 package ee.vvk.ivotingverification.util;
 
-import android.app.Activity;
 import android.net.SSLCertificateSocketFactory;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.Log;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -25,69 +27,53 @@ public class TlsConnection {
     private final static String TAG = "TLS";
 
     private final SSLCertificateSocketFactory sslCertificateSocketFactory;
-    private final Activity context;
 
-    public TlsConnection(Activity cx, String[] tlsCerts) {
-        this.context = cx;
-        sslCertificateSocketFactory =
-                (SSLCertificateSocketFactory) SSLCertificateSocketFactory.getDefault(0);
-        try {
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
-            tmf.init(Util.createTrustStore(tlsCerts));
-            sslCertificateSocketFactory.setTrustManagers(tmf.getTrustManagers());
-        } catch (Exception e) {
-            if (Util.DEBUGGABLE) {
-                Log.e(TAG, "Tehniline viga: " + e.getMessage(), e);
-            }
-            Util.startErrorIntent(context, C.badServerResponseMessage, true);
-        }
+    public TlsConnection(String[] tlsCerts) throws Exception {
+        sslCertificateSocketFactory = (SSLCertificateSocketFactory)
+                SSLCertificateSocketFactory.getDefault(0);
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
+        tmf.init(Util.createTrustStore(tlsCerts));
+        sslCertificateSocketFactory.setTrustManagers(tmf.getTrustManagers());
     }
 
-    public Socket sendRequest(String[] urlArray, String hostName, ByteBuffer buf) {
+    /**
+     * @throws IOException if sending the request failed
+     * @throws UnsupportedOperationException if the device does not support SNI
+     */
+    public InputStream sendRequest(String[] urlArray, String hostName, ByteBuffer buf)
+            throws IOException, UnsupportedOperationException {
+        SSLSocket socket;
         try {
-            SSLSocket socket = createConnection(urlArray, C.connectionTimeout1);
-            socket = socket == null ? createConnection(urlArray, C.connectionTimeout2) : socket;
-
-            if (socket == null) {
-                return null;
-            }
-            socket.setSoTimeout(15000);
-            socket.setEnabledProtocols(new String[]{"TLSv1.2"});
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                sslCertificateSocketFactory.setHostname(socket, hostName);
-            } else {
-                // "No documented SNI support on Android <4.2, trying with reflection
-                try {
-                    Method setHostnameMethod = socket.getClass().getMethod("setHostname", String.class);
-                    setHostnameMethod.invoke(socket, hostName);
-                } catch (Exception e) {
-                    if (Util.DEBUGGABLE) {
-                        Log.e(TAG, "SNI Error", e);
-                    }
-                    Util.startErrorIntent(context,
-                            C.badDeviceMessage, true);
-                    return null;
-                }
-            }
-            //socket.startHandshake();
-            WritableByteChannel out = Channels.newChannel(socket.getOutputStream());
-            out.write(buf);
-            return socket;
-        } catch (Exception e) {
+            socket = createConnection(urlArray, C.connectionTimeout1);
+        } catch (IOException e) {
             if (Util.DEBUGGABLE) {
-                e.printStackTrace();
-                Log.e(TAG, "Network Connection Error", e);
+                Log.w(TAG, "First round did not connect, retrying", e);
             }
-            Util.startErrorIntent(context,
-                    C.badServerResponseMessage, true);
+            socket = createConnection(urlArray, C.connectionTimeout2);
         }
-        return null;
+
+        socket.setSoTimeout(15000);
+        socket.setEnabledProtocols(new String[]{"TLSv1.2"});
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            sslCertificateSocketFactory.setHostname(socket, hostName);
+        } else {
+            // No documented SNI support on Android <4.2, trying with reflection
+            try {
+                Method setHostnameMethod = socket.getClass().getMethod("setHostname", String.class);
+                setHostnameMethod.invoke(socket, hostName);
+            } catch (Exception e) {
+                throw new UnsupportedOperationException("setHostname", e);
+            }
+        }
+        //socket.startHandshake();
+        WritableByteChannel out = Channels.newChannel(socket.getOutputStream());
+        out.write(buf);
+        return socket.getInputStream();
     }
 
-    private SSLSocket createConnection(String[] urlArray, int timeout) throws Exception {
+    private SSLSocket createConnection(String[] urlArray, int timeout) throws IOException {
         List<String> domains = Arrays.asList(urlArray);
-        SSLSocket socket = (SSLSocket) sslCertificateSocketFactory.createSocket();
         Collections.shuffle(domains);
         for (String domain : domains) {
             String[] urlParts = domain.split(":");
@@ -97,13 +83,14 @@ public class TlsConnection {
                 ips = Arrays.asList(InetAddress.getAllByName(urlParts[0]));
             } catch (UnknownHostException e) {
                 if (Util.DEBUGGABLE) {
-                    Log.w(TAG, "Unknown host" + domain, e);
+                    Log.w(TAG, "Unknown host " + domain, e);
                 }
                 continue;
             }
             Collections.shuffle(ips);
             for (InetAddress ip : ips) {
                 try {
+                    SSLSocket socket = (SSLSocket) sslCertificateSocketFactory.createSocket();
                     socket.connect(new InetSocketAddress(ip, port), timeout);
                     return socket;
                 } catch (SocketTimeoutException e) {
@@ -113,6 +100,6 @@ public class TlsConnection {
                 }
             }
         }
-        return null;
+        throw new ConnectException("Could not connect to " + TextUtils.join(", ", urlArray));
     }
 }

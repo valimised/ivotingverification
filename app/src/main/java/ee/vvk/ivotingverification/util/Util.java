@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -68,29 +67,21 @@ public class Util {
 	public static Set<String> SpecialModels = new HashSet<>(Arrays.asList("Samsung GT-S6102", "Samsung GT-S5360",
 			"Samsung GT-S5660", "Samsung YP-G1", "Samsung YP-G70"));
 
-	public static KeyStore loadTrustStore(final Activity currentActivity) {
-
-		try {
-			KeyStore localTrustStore = KeyStore.getInstance("BKS");
-			InputStream in;
-			if(C.fromPro){
-				in = new FileInputStream(new File(C.trustStoreURL + "/mytruststoresConfig.bks"));
-			}else{
-				in = currentActivity.getResources().openRawResource(
-						R.raw.mytruststore);
-			}
-			try {
-				localTrustStore.load(in, C.trustStorePass.toCharArray());
-			} catch (NoSuchAlgorithmException | IOException | CertificateException e) {
-				Util.startErrorIntent(currentActivity,
-						C.badServerResponseMessage, true);
-			} finally {
-				in.close();
-			}
-			return localTrustStore;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+	public static KeyStore loadTrustStore(final Activity currentActivity) throws Exception {
+		KeyStore localTrustStore = KeyStore.getInstance("BKS");
+		InputStream in;
+		if (C.fromPro) {
+			in = new FileInputStream(new File(C.trustStoreURL + "/mytruststoresConfig.bks"));
+		} else {
+			in = currentActivity.getResources().openRawResource(
+					R.raw.mytruststore);
 		}
+		try {
+			localTrustStore.load(in, C.trustStorePass.toCharArray());
+		} finally {
+			in.close();
+		}
+		return localTrustStore;
 	}
 
 	public static KeyStore createTrustStore(String[] certStrArray) throws Exception {
