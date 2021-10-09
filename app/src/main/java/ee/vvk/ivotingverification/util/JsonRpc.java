@@ -3,7 +3,6 @@ package ee.vvk.ivotingverification.util;
 import android.os.Build;
 import android.util.JsonReader;
 import android.util.JsonToken;
-import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -13,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,9 +61,7 @@ public class JsonRpc {
         rootObj.put(KEY_REQUEST_METHOD, method.toString());
         rootObj.put(KEY_REQUEST_PARAMETERS, paramArray);
         rootObj.put(KEY_ID, VALUE_REQUEST_ID);
-        if (Util.DEBUGGABLE) {
-            Log.d(TAG, rootObj.toString(2));
-        }
+        Util.logDebug(TAG, rootObj.toString(2));
         return ByteBuffer.wrap(rootObj.toString().getBytes());
     }
 
@@ -71,7 +69,7 @@ public class JsonRpc {
         Map<String, Object> rMap = null;
         String error = null;
 
-        JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
+        JsonReader reader = new JsonReader(new InputStreamReader(in, StandardCharsets.UTF_8));
         reader.beginObject();
         while (reader.hasNext()) {
             String name = reader.nextName();
@@ -86,10 +84,8 @@ public class JsonRpc {
                         reader.nextNull();
                         rMap = null;
                     } else {
-                        switch (method) {
-                            case VERIFY:
-                                rMap = readVerifyResultToMap(reader);
-                                break;
+                        if (method == Method.VERIFY) {
+                            rMap = readVerifyResultToMap(reader);
                         }
                     }
                     break;

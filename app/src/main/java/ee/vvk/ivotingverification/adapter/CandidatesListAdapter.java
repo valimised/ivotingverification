@@ -3,7 +3,6 @@ package ee.vvk.ivotingverification.adapter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,10 +28,10 @@ import ee.vvk.ivotingverification.util.Util;
  */
 public class CandidatesListAdapter extends BaseAdapter {
 
-	private List<Candidate> entries;
-	private List<String> questionlist;
-	private LayoutInflater mInflater;
-	private Context context;
+	private final List<Candidate> entries;
+	private final List<String> questionlist;
+	private final LayoutInflater mInflater;
+	private final Context context;
 
 	private static final String TAG = CandidatesListAdapter.class
 			.getSimpleName();
@@ -70,19 +69,19 @@ public class CandidatesListAdapter extends BaseAdapter {
 			holder = new ViewHolder();
 			convertView.setTag(holder);
 
-			holder.candidateListItemContainer = (LinearLayout) convertView
+			holder.candidateListItemContainer = convertView
 					.findViewById(R.id.candidate_list_item_container);
 			holder.electionTitleShadow = convertView
 					.findViewById(R.id.election_title_label_shadow);
-			holder.candidateListItemDetails = (RelativeLayout) convertView
+			holder.candidateListItemDetails = convertView
 					.findViewById(R.id.candidate_list_item_details);
-			holder.triangleLabel = (LinearLayout) convertView
+			holder.triangleLabel = convertView
 					.findViewById(R.id.triangle_lbl);
-			holder.electionTitle = (TextView) convertView
+			holder.electionTitle = convertView
 					.findViewById(R.id.election_title_label);
-			holder.candidateName = (TextView) convertView
+			holder.candidateName = convertView
 					.findViewById(R.id.candidate_name_text);
-			holder.candidateParty = (TextView) convertView
+			holder.candidateParty = convertView
 					.findViewById(R.id.candidate_party_text);
 		} else {
 			holder = (ViewHolder) convertView.getTag();
@@ -114,15 +113,11 @@ public class CandidatesListAdapter extends BaseAdapter {
 		String tempNumber = "";
 
 		if (!RegexMatcher.IsCandidateNumber(entries.get(position).number)) {
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Wrong candidate number");
-			}
-			Util.startErrorIntent((Activity) context,
-					C.badServerResponseMessage, true);
+			Util.logDebug(TAG, "Wrong candidate number");
+			Util.startErrorIntent((Activity) context, C.badServerResponseMessage);
 		} else {
 			tempNumber = entries.get(position).number.substring(
-					entries.get(position).number.indexOf(".") + 1,
-					entries.get(position).number.length());
+					entries.get(position).number.indexOf(".") + 1);
 		}
 
 		TriangleView cv = new TriangleView(context,
@@ -144,11 +139,8 @@ public class CandidatesListAdapter extends BaseAdapter {
 		}
 
 		if (!RegexMatcher.IsLessThan101UtfChars(entries.get(position).name)) {
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Wrong candidate name");
-			}
-			Util.startErrorIntent((Activity) context,
-					C.badServerResponseMessage, true);
+			Util.logDebug(TAG, "Wrong candidate name");
+			Util.startErrorIntent((Activity) context, C.badServerResponseMessage);
 		} else {
 			holder.candidateName.setText(entries.get(position).name);
 		}

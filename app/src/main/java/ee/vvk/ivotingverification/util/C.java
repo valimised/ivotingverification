@@ -13,6 +13,8 @@ import java.util.List;
  */
 public class C {
 
+	public static int expectedVersion = 0;
+
 	public static String[] verificationUrlArray = new String[0];
 
 	public static String[] verificationTlsArray = new String[0];
@@ -25,13 +27,9 @@ public class C {
 
 	public static String tspregClientCert = "";
 
-	public static String langURL = "";
-
 	public static String helpURL = "https://www.valimised.ee/";
 
 	public final static String trustStorePass = "secret";
-
-	public static String trustStoreURL = "";
 
 	public static Typeface typeFace = Typeface.DEFAULT;
 
@@ -66,6 +64,8 @@ public class C {
 	public static String btnPacketData = "Andmeside";
 
 	public static String btnWifi = "Wifi";
+
+	public static String btnUpdate = "Värskenda";
 
 	public static String btnVerify = "Kontrolli";
 
@@ -135,6 +135,8 @@ public class C {
 
 	public static String badConfigMessage = "Valimiste seadistuse viga";
 
+	public static String badVersionMessage = "Rakendusest on olemas uuem versioon";
+
 	public static String problemQrCodeMessage = "QR koodi ei õnnestunud tuvastada";
 
 	public static String sendServerRequestMessage = "Valimiste süsteemiga ühendamine ebaõnnestus";
@@ -144,8 +146,6 @@ public class C {
 	public static String badDeviceMessage = "Selle seadmega ei ole võimalik verifitseerimist läbi viia";
 
 	public static String cameraPermissionRequired = "Rakenduse kasutamiseks peab olema kaamera kasutamine lubatud";
-
-	public static boolean fromPro = false;
 
 	public static List<String> languages = new ArrayList<>();
 

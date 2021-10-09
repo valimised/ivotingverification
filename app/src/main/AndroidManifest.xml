@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="ee.vvk.ivotingverification" >
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -26,9 +27,11 @@
         android:label="@string/app_name" >
         <activity
             android:name=".PermissionActivity"
+            android:exported="true"
             android:configChanges="orientation|keyboardHidden"
             android:excludeFromRecents="true"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -36,36 +39,61 @@
         </activity>
         <activity
             android:name=".MainActivity"
+            android:exported="false"
             android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity">
         </activity>
         <activity
             android:name=".QRScannerActivity"
+            android:exported="false"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:stateNotNeeded="true"
             android:windowSoftInputMode="adjustPan" >
         </activity>
         <activity
             android:name=".VoteDownloadActivity"
-            android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait" >
-        </activity>
-        <activity
-            android:name=".VoteActivity"
+            android:exported="false"
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="portrait"
-            android:noHistory="true" >
+            tools:ignore="LockedOrientationActivity">
+        </activity>
+        <activity
+            android:name=".VoteReceivedActivity"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="portrait"
+            android:noHistory="true"
+            tools:ignore="LockedOrientationActivity">
         </activity>
         <activity
             android:name=".ErrorActivity"
-            android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="portrait" >
-        </activity>
-        <activity
-            android:name=".BruteForceActivity"
+            android:exported="false"
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="portrait"
-            android:noHistory="true" >
+            tools:ignore="LockedOrientationActivity">
+        </activity>
+        <activity
+            android:name=".NetworkErrorActivity"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity">
+        </activity>
+        <activity
+            android:name=".VersionErrorActivity"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity">
+        </activity>
+        <activity
+            android:name=".DecryptionActivity"
+            android:exported="false"
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="portrait"
+            android:noHistory="true"
+            tools:ignore="LockedOrientationActivity">
         </activity>
 
         <uses-library

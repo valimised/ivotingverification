@@ -19,7 +19,6 @@ import android.widget.LinearLayout;
 public class TriangleView extends LinearLayout {
 
 	private Paint trianglePaint;
-	private Path trianglePath;
 	private int color;
 	private String number;
 	private Context context;
@@ -47,7 +46,7 @@ public class TriangleView extends LinearLayout {
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-		trianglePath = getTriangle(super.getWidth());
+		Path trianglePath = getTriangle(super.getWidth());
 		canvas.drawPath(trianglePath, trianglePaint);
 
 		Paint mTextPaint = new Paint();
@@ -65,11 +64,10 @@ public class TriangleView extends LinearLayout {
 	}
 
 	private Path getTriangle(int l) {
-		Point p1 = null, p2 = null, p3 = null;
-
-		p1 = new Point(0, l);
-		p2 = new Point(l, l);
-		p3 = new Point(l, 0);
+		
+		Point p1 = new Point(0, l);
+		Point p2 = new Point(l, l);
+		Point p3 = new Point(l, 0);
 
 		Path path = new Path();
 		path.moveTo(p1.x, p1.y);

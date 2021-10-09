@@ -22,7 +22,7 @@ distributed via Google Play Store.
 
 The app is published here:
 https://play.google.com/store/apps/details?id=ee.ivxv.ivotingverification&hl=en.
-Current APK version is 28 (git tag EP2019-APK-28) used during EP2019 election.
+Current APK version is 31 (git tag KOV201-APK-31) used during KOV2021 election.
 
 Steps to building the project and verifying the codebase matches the published
 APKs.
@@ -39,7 +39,7 @@ Build pre-requisites:
 
 Building:
   * Gradle buildsystem is used, actual version is specified in
-    gradle/wrapper/gradle-wrapper.properties (currently 4.7)
+    gradle/wrapper/gradle-wrapper.properties (currently 7.0.2)
   * Run gradlew (gradlew.bat on Windows) script in the root directory with
     'assembleRelease' argument
   * Output apk will be located at

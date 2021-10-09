@@ -1,21 +1,21 @@
-/**
- * This file incorporates work covered by the following copyright and  
- * permission notice:  
- * 
- * Copyright (C) 2008 ZXing authors
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- **/
+/*
+  This file incorporates work covered by the following copyright and
+  permission notice:
+
+  Copyright (C) 2008 ZXing authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 
 package ee.vvk.ivotingverification.qr;
 
@@ -25,7 +25,6 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.Result;
@@ -76,14 +75,10 @@ public final class CaptureActivityHandler extends Handler {
 				cameraManager.requestAutoFocus(this, R.id.auto_focus);
 			}
 		} else if (message.what == R.id.restart_preview) {
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Got restart preview message");
-			}
+			Util.logDebug(TAG, "Got restart preview message");
 			restartPreviewAndDecode();
 		} else if (message.what == R.id.decode_succeeded) {
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Got decode succeeded message");
-			}
+			Util.logDebug(TAG, "Got decode succeeded message");
 			state = State.SUCCESS;
 			Bundle bundle = message.getData();
 			Bitmap barcode = bundle == null ? null : (Bitmap) bundle
@@ -94,9 +89,7 @@ public final class CaptureActivityHandler extends Handler {
 			cameraManager.requestPreviewFrame(decodeThread.getHandler(),
 					R.id.decode);
 		} else if (message.what == R.id.return_scan_result) {
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Got return scan result message");
-			}
+			Util.logDebug(TAG, "Got return scan result message");
 		}
 	}
 

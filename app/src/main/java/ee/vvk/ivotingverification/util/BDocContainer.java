@@ -2,7 +2,6 @@ package ee.vvk.ivotingverification.util;
 
 import android.net.Uri;
 import android.util.Base64;
-import android.util.Log;
 import android.util.Pair;
 
 import org.spongycastle.asn1.ASN1EncodableVector;
@@ -30,6 +29,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import ee.vvk.ivotingverification.model.VerificationProfile;
 import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.Element;
@@ -50,7 +50,7 @@ public class BDocContainer {
     private static final String RSA_OID = "1.2.840.113549.1.1.1";
 
 
-    private String ballotNameRegex;
+    private final String ballotNameRegex;
 
     public enum SigningAlg {
         SHA256_RSA,
@@ -66,8 +66,39 @@ public class BDocContainer {
     public X509Certificate cert;
     public X509Certificate issuer;
     private String canonSigFileStr;
+    private String signerCN;
 
-    public BDocContainer(InputStream in, String electionName) {
+	// verifies data received from server. Throws exception on any validation error.
+    public static BDocContainer getVerifiedContainer(
+            VerificationProfile verificationProfile,
+            byte[] containerData,
+            byte[] ocspData,
+            byte[] regData) throws Exception {
+
+		BDocContainer container = new BDocContainer(
+                new ByteArrayInputStream(containerData), verificationProfile.getPublicKey().elId);
+		container.parseContainer();
+		container.validateContainer(verificationProfile.getEsteidCerts());
+
+		long producedAt = Ocsp.verifyResponse(new ByteArrayInputStream(ocspData),
+                verificationProfile.getOcspCerts(), container.cert, container.issuer);
+
+		long genTime = Pkix.verifyResponse(regData,
+                verificationProfile.getTspregClientCert().getPublicKey(),
+                verificationProfile.getTspregServiceCert(),
+                container.getSignatureValueCanon());
+
+		long d = genTime - producedAt;
+		if (d < 0) {
+			throw new Exception("PKIX predates OCSP");
+		}
+		if (d > Util.MAX_TIME_BETWEEN_OCSP_PKIX) {
+			throw new Exception("PKIX and OCSP timestamps too far apart");
+		}
+		return container;
+	}
+
+    private BDocContainer(InputStream in, String electionName) {
         try {
             sha256 = MessageDigest.getInstance("SHA256");
         } catch (NoSuchAlgorithmException e) {
@@ -90,13 +121,10 @@ public class BDocContainer {
 
     public void parseContainer() throws Exception {
         ZipEntry entry;
-        while ((entry = zip.getNextEntry()) != null)
-        {
-            if (Util.DEBUGGABLE) {
-                Log.d(TAG, "entry: " + entry.getName() + ", " + entry.getSize());
-            }
+        while ((entry = zip.getNextEntry()) != null) {
+            Util.logDebug(TAG, "entry: " + entry.getName() + ", " + entry.getSize());
 
-            if (entry.getName().equals("mimetype") && entry.getSize()==-1) {
+            if (entry.getName().equals("mimetype") && entry.getSize() == -1) {
                 entry.setSize(31);
             }
             byte[] data = Util.toBytes(zip, MAX_FILE_SIZE);
@@ -123,16 +151,17 @@ public class BDocContainer {
         canonSigFileStr = new String(canonicalizeDocument(doc));
         String signedPropertiesDigest = computeSignedPropertiesDigest(canonSigFileStr);
         verifyDigestValues(root, signedPropertiesDigest);
-        if (Util.DEBUGGABLE) {
-            Log.i(TAG, "Container signature file digest values correct");
-        }
+        Util.logInfo(TAG, "Container signature file digest values correct");
+
         byte[] signedInfo = getSignedInfo(canonSigFileStr);
         String sig = getSignature(root);
         PublicKey pk = getKey(root, issuers);
         verifySignature(signedInfo, sig, pk);
-        if (Util.DEBUGGABLE) {
-            Log.i(TAG, "Container signature correct");
-        }
+        Util.logInfo(TAG, "Container signature correct");
+    }
+
+    public String getSignerCN() {
+        return signerCN;
     }
 
     private byte[] getSignedInfo(String canonStr) {
@@ -153,11 +182,13 @@ public class BDocContainer {
         CertificateFactory cf = CertificateFactory.getInstance("X.509", "SC");
         byte[] certData = Base64.decode(node.getValue(), Base64.DEFAULT);
         cert = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(certData));
+		signerCN = Util.getSubjectCN(cert);
+		String issuerCN = Util.getIssuerCN(cert);
 
         try {
             issuer = Util.verifyCertIssuerSig(cert, issuers);
         } catch (Exception e) {
-            throw new Exception("Vote signer cert not properly signed by any of ESTEID certs");
+            throw new Exception("Vote signer cert for " + signerCN + " not properly signed by any of ESTEID certs: " + issuerCN);
         }
 
         try {
@@ -194,10 +225,8 @@ public class BDocContainer {
                 KeyFactory kf = KeyFactory.getInstance("RSA", "SC");
                 return kf.generatePublic(new RSAPublicKeySpec(
                         new BigInteger(1, mod), new BigInteger(1, exp)));
-            } catch (Exception ignored) {
-                if (Util.DEBUGGABLE) {
-                    Log.d(TAG, "Ignored Exception, rethrowing original", ignored);
-                }
+            } catch (Exception exception) {
+                Util.logDebug(TAG, "Ignored Exception, rethrowing original", exception);
                 throw e;
             }
         }
@@ -253,9 +282,7 @@ public class BDocContainer {
             sigBytes = new DERSequence(v).getEncoded();
         }
         if (!signature.verify(sigBytes)) {
-            if (Util.DEBUGGABLE) {
-                Log.e(TAG, "container signature did not verify successfully");
-            }
+            Util.logDebug(TAG, "container signature did not verify successfully");
             throw new Exception();
         }
     }
@@ -282,9 +309,7 @@ public class BDocContainer {
                 signingAlg = SigningAlg.SHA256_ECDSA;
                 break;
             default:
-                if (Util.DEBUGGABLE) {
-                    Log.e(TAG, "Invalid signing algorithm: " + signingAlgStr);
-                }
+                Util.logError(TAG, "Invalid signing algorithm: " + signingAlgStr);
                 throw new Exception();
         }
         Elements references = node.getChildElements("Reference", NS_XMLDSIG);
@@ -295,28 +320,22 @@ public class BDocContainer {
                     .getFirstChildElement("DigestValue", NS_XMLDSIG).getValue().replace("\n", "");
             if (type != null && type.equals("http://uri.etsi.org/01903#SignedProperties")) {
                 if (!expectedDigestValue.equals(signedPropertiesDigest)) {
-                    if (Util.DEBUGGABLE) {
-                        Log.e(TAG, "Signature and computed digest values for 'SignedProperties' do not match\n" +
+                    Util.logError(TAG, "Signature and computed digest values for 'SignedProperties' do not match\n" +
                                 "expected: " + expectedDigestValue + "\n" +
                                 "computed: " + signedPropertiesDigest);
-                    }
                     throw new Exception();
                 }
             } else {
                 byte[] digestData = votes.get(Uri.decode(uri));
                 if (digestData == null) {
-                    if (Util.DEBUGGABLE) {
-                        Log.e(TAG, "Reference uri in signature does not match any file in container: " + uri);
-                    }
+                    Util.logError(TAG, "Reference uri in signature does not match any file in container: " + uri);
                     throw new Exception();
                 }
                 String computedDigest = Base64.encodeToString(sha256.digest(digestData), Base64.NO_WRAP);
                 if (!computedDigest.equals(expectedDigestValue)) {
-                    if (Util.DEBUGGABLE) {
-                        Log.e(TAG, "Signature and computed digest values do not match: " + uri + "\n" +
+                    Util.logError(TAG, "Signature and computed digest values do not match: " + uri + "\n" +
                         "expected: " + expectedDigestValue + "\n" +
                         "computed: " + computedDigest);
-                    }
                     throw new Exception();
                 }
             }
@@ -338,14 +357,11 @@ public class BDocContainer {
 
     private void validateMimeType(byte[] data) throws Exception {
         String str = new String(data);
-        if (Util.DEBUGGABLE) {
-            Log.d(TAG, "mimetype value: " + str);
-        }
+        Util.logDebug(TAG, "mimetype value: " + str);
         if (!str.equals(MIMETYPE_VALUE)) {
             throw new Exception("Incorrect bdoc mimetype value");
         }
     }
-
 
     private boolean isMimeType(String entryName) {
         return entryName.equalsIgnoreCase("mimetype");

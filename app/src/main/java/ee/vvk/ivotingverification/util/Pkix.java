@@ -44,7 +44,7 @@ public class Pkix {
             throw new Exception("Verification of collector's signature in nonce failed");
         }
 
-        // Pkix responser signature on the response has to verified with trusted certificate
+        // Pkix responder signature on the response has to verified with trusted certificate
         try {
             token.validate(sigVerifier);
         } catch (TSPValidationException e) {

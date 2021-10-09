@@ -1,1 +1,1 @@
-https://www.valimised.ee/kontrollrakendus/config.json
+https://www.valimised.ee/verify/config.json

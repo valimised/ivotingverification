@@ -4,11 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 
-/**
- * Regular expressions matcher.
- * 
- * @version 16.05.2013
- */
+
 public class RegexMatcher {
 
 	private static final String SESSION_ID_REGEX = "^[0-9a-f]{32}$";
@@ -61,9 +57,6 @@ public class RegexMatcher {
 	}
 
 	public static boolean IsLessThan101UtfChars(String s) {
-		if (s.length() < 101 && isValidUTF8(s.getBytes())) {
-			return true;
-		}
-		return false;
+		return s.length() < 101 && isValidUTF8(s.getBytes());
 	}
 }

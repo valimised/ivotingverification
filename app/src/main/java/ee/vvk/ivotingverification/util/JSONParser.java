@@ -30,6 +30,7 @@ public class JSONParser {
 		parseJsonTexts(appConfig);
 		parseJsonErrors(appConfig);
 		parseJsonElections(appConfig);
+		parseJsonVersions(appConfig);
 		if (!textOnly) {
 			parseJsonColors(appConfig);
 			parseJsonParams(appConfig);
@@ -52,6 +53,7 @@ public class JSONParser {
 		C.btnOk = texts.optString("btn_ok", C.btnOk);
 		C.btnPacketData = texts.optString("btn_packet_data", C.btnPacketData);
 		C.btnWifi = texts.optString("btn_wifi", C.btnWifi);
+		C.btnUpdate = texts.optString("btn_update", C.btnUpdate);
 		C.btnVerify = texts.optString("btn_verify", C.btnVerify);
 		C.noChoice = texts.optString("lbl_no_choice", C.noChoice);
 		C.lblChoice = texts.optString("lbl_choice", C.lblChoice);
@@ -70,6 +72,8 @@ public class JSONParser {
 		C.noNetworkMessage = errors.optString("no_network_message", C.noNetworkMessage);
 		C.getConfigMessage = errors.optString("get_config_message", C.getConfigMessage);
 		C.badConfigMessage = errors.optString("bad_config_message", C.badConfigMessage);
+		C.badVersionMessage = errors.optString("bad_version_message", C.badVersionMessage);
+
 		C.problemQrCodeMessage = errors.optString(
 				"problem_qrcode_message", C.problemQrCodeMessage);
 		C.sendServerRequestMessage = errors.optString(
@@ -133,6 +137,15 @@ public class JSONParser {
 				"lbl_close_timeout_shadow", C.lblCloseTimeoutShadow);
 		C.lblOuterInnerContainerDivider = colors.optString(
 				"lbl_outer_inner_container_divider", C.lblOuterInnerContainerDivider);
+	}
+
+	private static void parseJsonVersions(JSONObject appConfig) throws JSONException {
+		JSONObject params = appConfig.getJSONObject("versions");
+
+		/* Mandatory */
+
+		C.expectedVersion = params.getInt("android_version_code");
+
 	}
 
 	private static void parseJsonParams(JSONObject appConfig) throws JSONException {

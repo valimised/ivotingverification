@@ -16,6 +16,7 @@
 #   public *;
 #}
 -keep class org.spongycastle.** {*;}
+-keep class nu.xom.** {*;}
 -dontwarn javax.naming.**
 -dontwarn com.sun.org.apache.xerces.**
 -dontwarn org.apache.xerces.**

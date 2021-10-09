@@ -1,8 +1,5 @@
 package ee.vvk.ivotingverification.util;
 
-import android.app.Activity;
-import android.util.Log;
-
 import org.apache.http.conn.ssl.StrictHostnameVerifier;
 
 import java.io.IOException;
@@ -11,12 +8,12 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.UnknownHostException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
+import java.io.InputStream;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
@@ -27,13 +24,13 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 public class HttpRequest {
-	private static String TAG = "HttpRequest";
+	private static final String TAG = "HttpRequest";
 
 	private SSLSocketFactory sslFactory;
 
-	public HttpRequest(Activity context) throws Exception {
+	public HttpRequest(InputStream truststore) throws Exception {
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
-		tmf.init(Util.loadTrustStore(context));
+		tmf.init(Util.loadTrustStore(truststore));
 		this.sslFactory = new TLSv12SocketFactory(null, tmf.getTrustManagers(), null);
 	}
 
@@ -60,9 +57,9 @@ public class HttpRequest {
 	}
 
 	private void printResponseHeader(URLConnection urlConnection) {
-		Log.d(TAG, "Response header:");
+		Util.logDebug(TAG, "Response header:");
 		for (Map.Entry<String, List<String>> entry : urlConnection.getHeaderFields().entrySet()) {
-			Log.d(TAG, entry.getKey() + ": " + entry.getValue());
+			Util.logDebug(TAG, entry.getKey() + ": " + entry.getValue());
 		}
 	}
 
@@ -96,13 +93,13 @@ public class HttpRequest {
 		}
 
 		@Override
-		public Socket createSocket(String host, int port) throws IOException, UnknownHostException {
+		public Socket createSocket(String host, int port) throws IOException {
 			return tlsv12(factory.createSocket(host, port));
 		}
 
 		@Override
 		public Socket createSocket(String host, int port, InetAddress localHost, int localPort)
-				throws IOException, UnknownHostException {
+				throws IOException {
 			return tlsv12(factory.createSocket(host, port, localHost, localPort));
 		}
 

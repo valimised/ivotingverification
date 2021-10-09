@@ -1,21 +1,21 @@
-/**
- * This file incorporates work covered by the following copyright and  
- * permission notice:  
- * 
- * Copyright (C) 2008 ZXing authors
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- **/
+/*
+  This file incorporates work covered by the following copyright and
+  permission notice:
+
+  Copyright (C) 2008 ZXing authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 
 
 
@@ -25,10 +25,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.hardware.Camera;
-import android.os.Build;
 import android.preference.PreferenceManager;
-import android.util.Log;
-import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
 
@@ -43,6 +40,7 @@ import ee.vvk.ivotingverification.util.Util;
  * @author dswitkin@google.com (Daniel Switkin)
  */
 
+@SuppressWarnings("deprecation")
 final class CameraConfigurationManager {
 
 	private static final String TAG = "CameraConfiguration";
@@ -55,24 +53,17 @@ final class CameraConfigurationManager {
 		this.context = context;
 	}
 
+	@SuppressWarnings("deprecation")
 	void initFromCameraParameters(Camera camera) {
 
 		Camera.Parameters parameters = camera.getParameters();
 		WindowManager manager = (WindowManager) context
 				.getSystemService(Context.WINDOW_SERVICE);
-		int width = 0;
-		int height = 0;
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-			Point size = new Point();
-			manager.getDefaultDisplay().getSize(size);
-			width = size.x;
-			height = size.y;
-		} else {
-			Display d = manager.getDefaultDisplay();
-			width = d.getWidth();
-			height = d.getHeight();
-		}
+		Point size = new Point();
+		manager.getDefaultDisplay().getSize(size);
+		int width = size.x;
+		int height = size.y;
 
 		if (width < height) {
 			int temp = width;
@@ -82,16 +73,12 @@ final class CameraConfigurationManager {
 
 		screenResolution = new Point(width, height);
 
-		if (Util.DEBUGGABLE) {
-			Log.i(TAG, "Screen resolution: " + screenResolution);
-		}
+		Util.logInfo(TAG, "Screen resolution: " + screenResolution);
 
 		cameraResolution = findBestPreviewSizeValue(parameters,
 				screenResolution, false);
 
-		if (Util.DEBUGGABLE) {
-			Log.i(TAG, "Camera resolution: " + cameraResolution);
-		}
+		Util.logInfo(TAG, "Camera resolution: " + cameraResolution);
 	}
 
 	void setDesiredCameraParameters(Camera camera, int cameraId, int screenRotation) {
@@ -101,10 +88,8 @@ final class CameraConfigurationManager {
 		setCameraDisplayOrientation(camera, cameraId, screenRotation);
 
 		if (parameters == null) {
-			if (Util.DEBUGGABLE) {
-				Log.w(TAG,
+			Util.logWarning(TAG,
 						"Device error: no camera parameters are available. Proceeding without configuration.");
-			}
 			return;
 		}
 
@@ -148,7 +133,7 @@ final class CameraConfigurationManager {
 		if (currentSetting != newSetting) {
 			SharedPreferences.Editor editor = prefs.edit();
 			editor.putBoolean(PreferencesActivity.KEY_FRONT_LIGHT, newSetting);
-			editor.commit();
+			editor.apply();
 		}
 	}
 
@@ -218,9 +203,7 @@ final class CameraConfigurationManager {
 	private static String findSettableValue(Collection<String> supportedValues,
 			String... desiredValues) {
 
-		if (Util.DEBUGGABLE) {
-			Log.i(TAG, "Supported values: " + supportedValues);
-		}
+		Util.logInfo(TAG, "Supported values: " + supportedValues);
 		String result = null;
 		if (supportedValues != null) {
 			for (String desiredValue : desiredValues) {
@@ -231,9 +214,8 @@ final class CameraConfigurationManager {
 			}
 		}
 
-		if (Util.DEBUGGABLE) {
-			Log.i(TAG, "Settable value: " + result);
-		}
+		Util.logInfo(TAG, "Settable value: " + result);
+
 		return result;
 	}
 

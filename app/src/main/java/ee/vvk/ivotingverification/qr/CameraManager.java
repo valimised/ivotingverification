@@ -1,21 +1,21 @@
-/**
- * This file incorporates work covered by the following copyright and  
- * permission notice:  
- * 
- * Copyright (C) 2008 ZXing authors
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- **/
+/*
+  This file incorporates work covered by the following copyright and
+  permission notice:
+
+  Copyright (C) 2008 ZXing authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 
 package ee.vvk.ivotingverification.qr;
 
@@ -28,7 +28,6 @@ import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.SurfaceHolder;
 
 import java.io.IOException;
@@ -42,6 +41,7 @@ import ee.vvk.ivotingverification.util.Util;
  * 
  * @author dswitkin@google.com (Daniel Switkin)
  */
+@SuppressWarnings("ALL")
 public final class CameraManager {
 
 	private static final String TAG = CameraManager.class.getSimpleName();
@@ -83,6 +83,7 @@ public final class CameraManager {
 				if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
 					theCamera = Camera.open(i);
 					cameraId = i;
+					break;
 				}
 			}
 
@@ -164,9 +165,7 @@ public final class CameraManager {
 			try {
 				camera.autoFocus(autoFocusCallback);
 			} catch (RuntimeException re) {
-				if (Util.DEBUGGABLE) {
-					Log.w(TAG, "Unexpected exception while focusing", re);
-				}
+				Util.logWarning(TAG, "Unexpected exception while focusing", re);
 			}
 		}
 	}
@@ -197,9 +196,7 @@ public final class CameraManager {
 
 			framingRect = new Rect(leftOffset, topOffset, leftOffset + width,
 					topOffset + height);
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Calculated framing rect: " + framingRect);
-			}
+			Util.logDebug(TAG, "Calculated framing rect: " + framingRect);
 		}
 		return framingRect;
 	}
@@ -276,9 +273,7 @@ public final class CameraManager {
 			int topOffset = (screenResolution.y - height) / 2;
 			framingRect = new Rect(leftOffset, topOffset, leftOffset + width,
 					topOffset + height);
-			if (Util.DEBUGGABLE) {
-				Log.d(TAG, "Calculated manual framing rect: " + framingRect);
-			}
+			Util.logDebug(TAG, "Calculated manual framing rect: " + framingRect);
 			framingRectInPreview = null;
 		} else {
 			requestedFramingRectWidth = width;
@@ -316,9 +311,7 @@ public final class CameraManager {
 					startPreview();
 				}
 			} catch (Exception e) {
-				if (Util.DEBUGGABLE) {
-					Log.e(TAG, "Error initiating or closing camera flash: " + e.getMessage());
-				}
+				Util.logWarning(TAG, "Error initiating or closing camera flash: ", e);
 			}
 		}
 	}

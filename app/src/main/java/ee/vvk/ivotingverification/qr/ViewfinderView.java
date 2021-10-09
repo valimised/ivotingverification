@@ -1,21 +1,21 @@
-/**
- * This file incorporates work covered by the following copyright and  
- * permission notice:  
- * 
- * Copyright (C) 2008 ZXing authors
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- **/
+/*
+  This file incorporates work covered by the following copyright and
+  permission notice:
+
+  Copyright (C) 2008 ZXing authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
 
 package ee.vvk.ivotingverification.qr;
 
@@ -75,7 +75,7 @@ public final class ViewfinderView extends View {
 		laserColor = resources.getColor(R.color.viewfinder_laser);
 		resultPointColor = resources.getColor(R.color.possible_result_points);
 		scannerAlpha = 0;
-		possibleResultPoints = new ArrayList<ResultPoint>(5);
+		possibleResultPoints = new ArrayList<>(5);
 		lastPossibleResultPoints = null;
 	}
 
@@ -135,7 +135,7 @@ public final class ViewfinderView extends View {
 			if (currentPossible.isEmpty()) {
 				lastPossibleResultPoints = null;
 			} else {
-				possibleResultPoints = new ArrayList<ResultPoint>(5);
+				possibleResultPoints = new ArrayList<>(5);
 				lastPossibleResultPoints = currentPossible;
 				paint.setAlpha(CURRENT_POINT_OPACITY);
 				paint.setColor(resultPointColor);

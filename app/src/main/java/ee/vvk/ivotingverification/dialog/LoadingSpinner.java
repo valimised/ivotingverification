@@ -19,10 +19,8 @@ import ee.vvk.ivotingverification.util.Util;
  * @version 21.05.2013
  */
 public class LoadingSpinner extends Dialog {
-	private Context cx;
-	private ImageView iv;
-	private TextView tv;
-	private boolean isWhite;
+	private final Context cx;
+	private final boolean isWhite;
 
 	public LoadingSpinner(Context context, boolean isWhite) {
 		super(context, R.style.SpinnerDialog);
@@ -39,10 +37,10 @@ public class LoadingSpinner extends Dialog {
 			setContentView(R.layout.dialog_loading_black);
 		}
 		setCancelable(false);
-		iv = (ImageView) findViewById(R.id.spinner_img);
+		ImageView iv = findViewById(R.id.spinner_img);
 		iv.startAnimation(AnimationUtils.loadAnimation(cx, R.anim.spinner));
 
-		tv = (TextView) findViewById(R.id.loading);
+		TextView tv = findViewById(R.id.loading);
 		if (C.typeFace != null) {
 			tv.setTypeface(C.typeFace);
 		}

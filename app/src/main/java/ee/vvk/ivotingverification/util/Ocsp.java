@@ -1,7 +1,5 @@
 package ee.vvk.ivotingverification.util;
 
-import android.util.Log;
-
 import org.spongycastle.asn1.x509.ExtendedKeyUsage;
 import org.spongycastle.asn1.x509.KeyPurposeId;
 import org.spongycastle.cert.X509CertificateHolder;
@@ -43,7 +41,7 @@ public class Ocsp {
             }
         }
         if (!verified) {
-            Log.i(TAG, "Preconfigured OCSP responders not suitable, trying AIA");
+            Util.logInfo(TAG, "Preconfigured OCSP responders not suitable, trying AIA");
             verified = checkAIAResponder(basicResp, issuerCert);
         }
 
@@ -59,23 +57,17 @@ public class Ocsp {
         SingleResp[] responses = basicResp.getResponses();
         for (SingleResp resp: responses) {
             if (resp.getCertStatus() != CertificateStatus.GOOD) {
-                if (Util.DEBUGGABLE) {
-                    Log.w(TAG, "Ocsp SingleResponse cert status not GOOD: " + resp.getCertStatus());
-                }
+                Util.logWarning(TAG, "Ocsp SingleResponse cert status not GOOD: " + resp.getCertStatus());
                 continue;
             }
             CertificateID id = resp.getCertID();
             if (!requestedCert.getSerialNumber().equals(id.getSerialNumber())) {
-                if (Util.DEBUGGABLE) {
-                    Log.w(TAG, "Cert's and Ocsp responses serial numbers do not match");
-                }
+                Util.logWarning(TAG, "Cert's and Ocsp responses serial numbers do not match");
                 continue;
             }
             MessageDigest digest = MessageDigest.getInstance(id.getHashAlgOID().toString(), "SC");
             if (authorityKeyId != null && !Arrays.equals(authorityKeyId, id.getIssuerKeyHash())) {
-                if (Util.DEBUGGABLE) {
-                    Log.w(TAG, "Cert's and ocsp's authority key hash do not match");
-                }
+                Util.logWarning(TAG, "Cert's and ocsp's authority key hash do not match");
                 continue;
             }
 
@@ -87,9 +79,7 @@ public class Ocsp {
             }
 
             if (!Arrays.equals(dn, id.getIssuerNameHash())) {
-                if (Util.DEBUGGABLE) {
-                    Log.w(TAG, "Cert's and ocsp's issuer DN hash do not match");
-                }
+                Util.logWarning(TAG, "Cert's and ocsp's issuer DN hash do not match");
                 continue;
             }
             // reach here if all the checks are successful

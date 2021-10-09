@@ -1,16 +1,21 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
-    useLibrary 'org.apache.http.legacy'
+    compileSdkVersion 31
+//    useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
         applicationId "ee.ivxv.ivotingverification"
-        minSdkVersion 16
-        targetSdkVersion 28
-        versionCode 28
-        versionName "3.1.14"
+        minSdkVersion 24
+        targetSdkVersion 31
+        versionCode 31
+        versionName "3.1.17"
     }
+
+   compileOptions {
+     sourceCompatibility JavaVersion.VERSION_1_8
+     targetCompatibility JavaVersion.VERSION_1_8
+   }
 
     buildTypes {
         release {
@@ -28,8 +33,9 @@ android {
 dependencies {
     implementation files('libs/zxing_core-3.1.0.jar')
     implementation files('libs/xom-1.2.10.jar')
-    implementation 'com.android.support:appcompat-v7:28.0.0'
-    implementation 'com.madgag.spongycastle:core:1.56.0.0'
-    implementation 'com.madgag.spongycastle:prov:1.56.0.0'
-    implementation 'com.madgag.spongycastle:pkix:1.54.0.0'
+    implementation 'androidx.core:core:1.7.0-beta01'
+    //implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation group: 'com.madgag.spongycastle', name: 'core', version: '1.56.0.0'
+    implementation group: 'com.madgag.spongycastle', name: 'prov', version: '1.56.0.0'
+    implementation group: 'com.madgag.spongycastle', name: 'pkix', version: '1.54.0.0'
 }

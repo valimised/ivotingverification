@@ -4,7 +4,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:background="@drawable/frame_bg"
-    android:orientation="vertical" >
+    android:orientation="vertical">
 
     <SurfaceView
         android:id="@+id/surface"
@@ -26,7 +26,9 @@
         android:layout_height="250dp"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
-        android:src="@drawable/frame_img" />
+        android:src="@drawable/frame_img"
+        android:contentDescription=""
+        tools:ignore="ContentDescription" />
 
     <LinearLayout
         android:id="@+id/target_window_load"

@@ -20,8 +20,6 @@ import org.spongycastle.util.io.pem.PemReader;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,6 +33,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import ee.vvk.ivotingverification.ErrorActivity;
+import ee.vvk.ivotingverification.NetworkErrorActivity;
+import ee.vvk.ivotingverification.VersionErrorActivity;
 import ee.vvk.ivotingverification.R;
 import ee.vvk.ivotingverification.dialog.LoadingSpinner;
 
@@ -45,12 +45,9 @@ import ee.vvk.ivotingverification.dialog.LoadingSpinner;
  */
 public class Util {
 
-	public static final String SIGNER_CN = "ee.vvk.ivotingverification.SIGNER_CN";
-	public final static String RANDOM_SEED = "ee.vvk.ivotingverification.RANDOM_SEED";
-	public final static String VOTE_ARRAY = "ee.vvk.ivotingverification.VOTE_ARRAY";
+	public final static String VOTE_CONTAINER_INFO = "ee.vvk.ivotingverification.VOTE_CONTAINER_INFO";
 	public final static String ERROR_MESSAGE = "ee.vvk.ivotingverification.ERROR_MESSAGE";
-	public final static String NETWORK_STATUS = "ee.vvk.ivotingverification.NETWORK_STATUS";
-	public final static String EXTRA_MESSAGE = "ee.vvk.ivotingverification.MESSAGE";
+	public final static String QR_CODE_CONTENTS = "ee.vvk.ivotingverification.QR_CODE_CONTENTS";
 	public final static String EXIT = "ee.vvk.ivotingverification.EXIT";
 	public final static String RESULT = "ee.vvk.ivotingverification.RESULT";
 	public final static String ENCODING = "UTF-8";
@@ -61,21 +58,56 @@ public class Util {
 	public final static long VIBRATE_DURATION = 350L;
 
 	public static boolean DEBUGGABLE = false;
-	public static boolean CONFIGURABLE = false;
 
 	// Models where camera can't be rotated to portrait
 	public static Set<String> SpecialModels = new HashSet<>(Arrays.asList("Samsung GT-S6102", "Samsung GT-S5360",
 			"Samsung GT-S5660", "Samsung YP-G1", "Samsung YP-G70"));
 
-	public static KeyStore loadTrustStore(final Activity currentActivity) throws Exception {
-		KeyStore localTrustStore = KeyStore.getInstance("BKS");
-		InputStream in;
-		if (C.fromPro) {
-			in = new FileInputStream(new File(C.trustStoreURL + "/mytruststoresConfig.bks"));
-		} else {
-			in = currentActivity.getResources().openRawResource(
-					R.raw.mytruststore);
+
+	public static void logException(String tag, Exception exc) {
+		if (DEBUGGABLE) {
+			Log.e(tag, "", exc);
 		}
+	}
+
+	public static void logDebug(String tag, String msg) {
+		if (DEBUGGABLE) {
+			Log.d(tag, msg);
+		}
+	}
+	public static void logDebug(String tag, String msg, Exception exc) {
+		if (DEBUGGABLE) {
+			Log.d(tag, msg, exc);
+		}
+	}
+
+	public static void logInfo(String tag, String msg) {
+		if (DEBUGGABLE) {
+			Log.i(tag, msg);
+		}
+	}
+	public static void logWarning(String tag, String msg) {
+		if (DEBUGGABLE) {
+			Log.w(tag, msg);
+		}
+	}
+	public static void logWarning(String tag, String msg, Exception exc) {
+		if (DEBUGGABLE) {
+			Log.w(tag, msg, exc);
+		}
+	}
+
+	public static void logError(String tag, String msg) {
+		if (DEBUGGABLE) {
+			Log.e(tag, msg);
+		}
+	}
+
+
+	public static KeyStore loadTrustStore(final InputStream in) throws Exception {
+
+		KeyStore localTrustStore = KeyStore.getInstance("BKS");
+
 		try {
 			localTrustStore.load(in, C.trustStorePass.toCharArray());
 		} finally {
@@ -113,12 +145,12 @@ public class Util {
 	public static String readLines(InputStream in, String encoding)
 			throws IOException {
 		try {
-			StringBuffer buff = new StringBuffer();
+			StringBuilder buff = new StringBuilder();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(
 					in, encoding != null ? encoding : "UTF-8"));
-			String line = null;
+			String line;
 			while ((line = reader.readLine()) != null) {
-				buff.append(line + "\n");
+				buff.append(line).append("\n");
 			}
 			return buff.toString();
 		} finally {
@@ -143,17 +175,28 @@ public class Util {
 		}
 	}
 
-	public static void startErrorIntent(Activity currentActivity,
-			String error_msg, boolean networkStatus) {
+	public static void startErrorIntent(Activity currentActivity, String error_msg) {
 		Intent error_intent = new Intent(currentActivity, ErrorActivity.class);
 		error_intent.putExtra(Util.ERROR_MESSAGE, error_msg);
-		error_intent.putExtra(Util.NETWORK_STATUS, networkStatus);
 		currentActivity.startActivity(error_intent);
 		currentActivity.finish();
+		Util.logError("Error intent", currentActivity.getClass().getSimpleName());
+	}
 
-		if (Util.DEBUGGABLE) {
-			Log.e("Error intent", currentActivity.getClass().getSimpleName());
-		}
+	public static void startNetworkErrorIntent(Activity currentActivity, String error_msg) {
+		Intent error_intent = new Intent(currentActivity, NetworkErrorActivity.class);
+		error_intent.putExtra(Util.ERROR_MESSAGE, error_msg);
+		currentActivity.startActivity(error_intent);
+		currentActivity.finish();
+		Util.logError("Network error intent", currentActivity.getClass().getSimpleName());
+	}
+
+	public static void startVersionErrorIntent(Activity currentActivity, String error_msg) {
+		Intent error_intent = new Intent(currentActivity, VersionErrorActivity.class);
+		error_intent.putExtra(Util.ERROR_MESSAGE, error_msg);
+		currentActivity.startActivity(error_intent);
+		currentActivity.finish();
+		Util.logError("Version error intent", currentActivity.getClass().getSimpleName());
 	}
 
 	public static int generateHexColorValue(String color) {
@@ -161,20 +204,16 @@ public class Util {
 		try {
 			hexColor = Color.parseColor(color);
 		} catch (Exception e) {
-			if (Util.DEBUGGABLE) {
-				Log.d("Util", "Color wrong format");
-			}
+			Util.logDebug("Util", "Color wrong format");
 			hexColor = Color.parseColor("#FFFFFF");
 		}
 		return hexColor;
 	}
 
-
 	public static float convertPixelsToDp(float px, Context context) {
 		Resources resources = context.getResources();
 		DisplayMetrics metrics = resources.getDisplayMetrics();
-		float dp = px * (metrics.densityDpi / 160f);
-		return dp;
+		return px * (metrics.densityDpi / 160f);
 	}
 
 	public static String readRawTextFile(Context context, int fileName) {
@@ -189,7 +228,7 @@ public class Util {
 		try {
 			while ((line = buffReader.readLine()) != null) {
 				text.append(line);
-				text.append('\n');
+//				text.append('\n');
 			}
 		} catch (IOException e) {
 			return null;
@@ -238,23 +277,26 @@ public class Util {
 		return buffer.toByteArray();
 	}
 
-	public static String getCN(X509Certificate cert) throws CertificateException {
+	public static String getSubjectCN(X509Certificate cert) throws CertificateException {
 		X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
 		RDN cn = x500name.getRDNs(BCStyle.CN)[0];
 		return IETFUtils.valueToString(cn.getFirst().getValue()).replace("\\,", ", ");
 	}
 
-	public static X509Certificate[] getEsteidCerts(Activity activity) throws Exception {
-		byte[] certData = toBytes(activity.getResources().openRawResource(R.raw.esteid_sk_2011));
-		X509Certificate sk2011 = loadCertificate(certData);
+	public static String getIssuerCN(X509Certificate cert) throws CertificateException {
+		X500Name x500name = new JcaX509CertificateHolder(cert).getIssuer();
+		RDN cn = x500name.getRDNs(BCStyle.CN)[0];
+		return IETFUtils.valueToString(cn.getFirst().getValue()).replace("\\,", ", ");
+	}
 
-		certData = toBytes(activity.getResources().openRawResource(R.raw.esteid_sk_2015));
+	public static X509Certificate[] getEsteidCerts(Activity activity) throws Exception {
+		byte[] certData = toBytes(activity.getResources().openRawResource(R.raw.esteid_sk_2015));
 		X509Certificate sk2015 = loadCertificate(certData);
 
 		certData = toBytes(activity.getResources().openRawResource(R.raw.esteid2018));
 		X509Certificate esteid2018 = loadCertificate(certData);
 
-		return new X509Certificate[] {sk2011, sk2015, esteid2018};
+		return new X509Certificate[] {sk2015, esteid2018};
 	}
 
 	public static X509Certificate verifyCertIssuerSig(X509Certificate cert, X509Certificate... issuers) throws Exception {

@@ -1,26 +1,18 @@
 package ee.vvk.ivotingverification;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -29,419 +21,231 @@ import android.widget.TextView;
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
 import java.security.Security;
 
 import ee.vvk.ivotingverification.dialog.LoadingSpinner;
-import ee.vvk.ivotingverification.qr.CameraManager;
-import ee.vvk.ivotingverification.qr.CaptureActivityHandler;
+import ee.vvk.ivotingverification.model.QRCodeContents;
 import ee.vvk.ivotingverification.qr.InactivityTimer;
+import ee.vvk.ivotingverification.tasks.AsyncTaskActivity;
+import ee.vvk.ivotingverification.tasks.GetConfigTask;
+import ee.vvk.ivotingverification.tasks.TaskRunner;
 import ee.vvk.ivotingverification.util.C;
-import ee.vvk.ivotingverification.util.HttpRequest;
 import ee.vvk.ivotingverification.util.JSONParser;
-import ee.vvk.ivotingverification.util.RegexMatcher;
 import ee.vvk.ivotingverification.util.Util;
 
-/**
- * Main activity. The first screen.
- * 
- * @version 21.05.2013
- */
-public class MainActivity extends Activity implements SurfaceHolder.Callback {
+public class MainActivity extends CameraSurfaceActivity implements AsyncTaskActivity<String> {
 
-	private static final String TAG = MainActivity.class.getSimpleName();
+    private static final int REQUEST_CODE_QR_ACTIVITY = 1;
 
-	private CameraManager cameraManager;
-	private CaptureActivityHandler handler;
-	private boolean hasSurface;
-	private InactivityTimer inactivityTimer;
-	private SurfaceView surfaceView;
-	private LoadingSpinner mLoadingSpinner;
+    private static final String TAG = MainActivity.class.getSimpleName();
 
-	private Button buttonMore;
-	private Button buttonNext;
+    private InactivityTimer inactivityTimer;
+    private LoadingSpinner mLoadingSpinner;
 
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+    private Button buttonMore;
+    private Button buttonNext;
 
-		if (savedInstanceState == null && Util.CONFIGURABLE) {
-			Bundle extras = getIntent().getExtras();
-			if (extras != null && extras.size() == 2) {
-				C.configURL = extras.getString("configURL");
-				C.trustStoreURL = extras.getString("trustStoreURL");
-				C.fromPro = true;
-			}
-		}
-		if (!C.fromPro) {
-			C.configURL = Util.readRawTextFile(this.getApplicationContext(),
-					R.raw.config).trim();
-		}
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-				WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		Util.DEBUGGABLE = (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE));
+    public static boolean deleteDir(File dir) {
 
-		if (getIntent().getBooleanExtra(Util.EXIT, false)) {
-			finish();
-		}
+        if (dir == null) {
+            return true;
+        }
 
-		hasSurface = false;
-		inactivityTimer = new InactivityTimer(this);
+        boolean all_deleted = true;
 
-		setContentView(R.layout.main_activity);
+        if (dir.isDirectory()) {
+            String[] children = dir.list();
+            if (children != null) {
+                for (String child : children) {
+                    all_deleted &= deleteDir(new File(dir, child));
+                }
+            }
+        }
 
-		LinearLayout linearLayout = (LinearLayout) findViewById(R.id.target_window);
-		GradientDrawable bgShape = (GradientDrawable) linearLayout
-				.getBackground();
-		bgShape.setColor(Color.GRAY);
+        if (all_deleted) {
+            return dir.delete();
+        }
+        return false;
+    }
 
-		ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-		if (networkInfo != null && networkInfo.isConnected()) {
-			new GetConfigTask().execute();
-		} else {
-			Util.startErrorIntent(MainActivity.this, C.noNetworkMessage, false);
-		}
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
 
-		LinearLayout frameBg = (LinearLayout) findViewById(R.id.frame_bg);
-		frameBg.setBackgroundColor(Util
-				.generateHexColorValue(C.frameBackground));
+        surfaceResource = R.id.surface;
 
-		buttonNext = (Button) findViewById(R.id.btn_next);
-		buttonNext.setText(C.btnNext);
-		buttonNext.setTextColor(Util.generateHexColorValue(C.btnForeground));
-		GradientDrawable bgNextShape = (GradientDrawable) buttonNext
-				.getBackground();
-		bgNextShape.setColor(Util.generateHexColorValue(C.btnBackground));
+        super.onCreate(savedInstanceState);
 
-		buttonNext.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				clickNextButton(v);
-			}
-		});
+        C.configURL = Util.readRawTextFile(this.getApplicationContext(), R.raw.config);
 
-		buttonMore = (Button) findViewById(R.id.btn_more);
-		buttonMore.setText(C.btnMore);
-		buttonMore.setTextColor(Util.generateHexColorValue(C.btnForeground));
-		GradientDrawable bgMoreShape = (GradientDrawable) buttonMore
-				.getBackground();
-		bgMoreShape.setColor(Util.generateHexColorValue(C.btnBackground));
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        Util.DEBUGGABLE = (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE));
 
-		buttonMore.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				clickMoreButton(v);
-			}
-		});
-	}
+        if (getIntent().getBooleanExtra(Util.EXIT, false)) {
+            finish();
+        }
 
-	public Handler getHandler() {
-		return handler;
-	}
+        inactivityTimer = new InactivityTimer(this);
 
-	public CameraManager getCameraManager() {
-		return cameraManager;
-	}
+        setContentView(R.layout.main_activity);
 
-	@Override
-	public void onResume() {
-		super.onResume();
-		cameraManager = new CameraManager(this);
+        LinearLayout linearLayout = findViewById(R.id.target_window);
+        GradientDrawable bgShape = (GradientDrawable) linearLayout.getBackground();
+        bgShape.setColor(Color.GRAY);
 
-		handler = null;
+        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnected()) {
+            TaskRunner runner = new TaskRunner();
+            InputStream truststorein = getResources().openRawResource(R.raw.mytruststore);
+            runner.executeAsync(new GetConfigTask(this, truststorein, C.configURL));
+        } else {
+            Util.startNetworkErrorIntent(MainActivity.this, C.noNetworkMessage);
+        }
 
-		surfaceView = (SurfaceView) this.findViewById(R.id.surface);
-		SurfaceHolder surfaceHolder = surfaceView.getHolder();
-		if (hasSurface) {
-			initCamera(surfaceHolder, false);
-		} else {
-			surfaceHolder.addCallback(this);
-		}
+        LinearLayout frameBg = findViewById(R.id.frame_bg);
+        frameBg.setBackgroundColor(Util.generateHexColorValue(C.frameBackground));
 
-		inactivityTimer.onResume();
-	}
+        buttonNext = findViewById(R.id.btn_next);
+        buttonNext.setText(C.btnNext);
+        buttonNext.setTextColor(Util.generateHexColorValue(C.btnForeground));
+        GradientDrawable bgNextShape = (GradientDrawable) buttonNext.getBackground();
+        bgNextShape.setColor(Util.generateHexColorValue(C.btnBackground));
+        buttonNext.setOnClickListener(this::clickNextButton);
 
-	public void clickNextButton(View view) {
-		Intent QRCodeDecoder = new Intent(this, QRScannerActivity.class);
-		startActivityForResult(QRCodeDecoder, 1);
-	}
+        buttonMore = findViewById(R.id.btn_more);
+        buttonMore.setText(C.btnMore);
+        buttonMore.setTextColor(Util.generateHexColorValue(C.btnForeground));
+        GradientDrawable bgMoreShape = (GradientDrawable) buttonMore.getBackground();
+        bgMoreShape.setColor(Util.generateHexColorValue(C.btnBackground));
+        buttonMore.setOnClickListener(this::clickMoreButton);
+    }
 
-	public void clickMoreButton(View view) {
-		Intent showHelp = new Intent(Intent.ACTION_VIEW, Uri.parse(C.helpURL));
-		try {
-			startActivity(showHelp);
-		} catch (ActivityNotFoundException e) {
-			// No browser installed? Not much we can do.
-		}
-	}
+    @Override
+    public void onResume() {
+        super.onResume();
+        inactivityTimer.onResume();
+    }
 
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-		if (requestCode == 1) {
-			if (resultCode == RESULT_OK) {
-				String contents = intent.getStringExtra(Util.RESULT);
-				if (Util.DEBUGGABLE) {
-					Log.d(TAG, contents);
-				}
-				try {
-					if (contents != null && RegexMatcher.isCorrectQR(contents)) {
-						startVoteDownloadActivity(contents);
-					} else {
-						Util.startErrorIntent(MainActivity.this,
-								C.problemQrCodeMessage, true);
-					}
-				} catch (Exception e) {
-					Util.startErrorIntent(MainActivity.this,
-							C.problemQrCodeMessage, true);
-				}
-			}
-			if (resultCode == RESULT_CANCELED) {
-				finish();
-				Intent intentMain = new Intent(getApplicationContext(),
-						MainActivity.class);
-				startActivity(intentMain);
-			}
-		}
-	}
+    @Override
+    public void onPause() {
+        inactivityTimer.onPause();
+        super.onPause();
+    }
 
-	private void startVoteDownloadActivity(String contents) {
-		Intent next_intent = new Intent(this, VoteDownloadActivity.class);
-		next_intent.putExtra(Util.EXTRA_MESSAGE, contents);
-		startActivity(next_intent);
-	}
+    public void clickNextButton(View view) {
+        Intent QRCodeDecoder = new Intent(this, QRScannerActivity.class);
+        startActivityForResult(QRCodeDecoder, REQUEST_CODE_QR_ACTIVITY);
+    }
 
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		C.fromPro = false;
-		Util.stopSpinner(mLoadingSpinner);
-		try {
-			trimCache(this);
-		} catch (Exception e) {
-		}
-	}
+    public void clickMoreButton(View view) {
+        Intent showHelp = new Intent(Intent.ACTION_VIEW, Uri.parse(C.helpURL));
+        try {
+            startActivity(showHelp);
+        } catch (ActivityNotFoundException e) {
+            Util.logDebug(TAG, "Error while displaying help: ", e);
+        }
+    }
 
-	public static void trimCache(Context context) {
-		try {
-			File dir = context.getCacheDir();
-			if (dir != null && dir.isDirectory()) {
-				deleteDir(dir);
-			}
-		} catch (Exception e) {
-		}
-	}
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if (requestCode == REQUEST_CODE_QR_ACTIVITY) {
+            if (resultCode == RESULT_OK) {
+                String contents = intent.getStringExtra(Util.RESULT);
+                Util.logDebug(TAG, contents);
+                try {
+                    QRCodeContents qr = new QRCodeContents(contents);
+                    Intent next_intent = new Intent(this, VoteDownloadActivity.class);
+                    next_intent.putExtra(Util.QR_CODE_CONTENTS, qr);
+                    startActivity(next_intent);
+                } catch (Exception e) {
+                    Util.startErrorIntent(this, C.problemQrCodeMessage);
+                }
+            }
+            if (resultCode == RESULT_CANCELED) {
+                finish();
+                Intent intentMain = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intentMain);
+            }
+        }
+    }
 
-	public static boolean deleteDir(File dir) {
-		if (dir != null && dir.isDirectory()) {
-			String[] children = dir.list();
-			for (int i = 0; i < children.length; i++) {
-				boolean success = deleteDir(new File(dir, children[i]));
-				if (!success) {
-					return false;
-				}
-			}
-		}
-		return dir.delete();
-	}
+    @Override
+    protected void onDestroy() {
+        inactivityTimer.shutdown();
+        super.onDestroy();
+        Util.stopSpinner(mLoadingSpinner);
+        try {
+            deleteDir(getApplicationContext().getCacheDir());
+        } catch (Exception e) {
+            Util.logDebug(TAG, "Error while cleaning app cache: ", e);
+        }
+    }
 
-	@Override
-	public void onPause() {
-		if (handler != null) {
-			handler.quitSynchronously();
-			handler = null;
-		}
-		inactivityTimer.onPause();
-		cameraManager.closeDriver();
-		if (!hasSurface) {
-			SurfaceView surfaceView = (SurfaceView) this
-					.findViewById(R.id.surface);
-			if (surfaceView != null) {
-				SurfaceHolder surfaceHolder = surfaceView.getHolder();
-				surfaceHolder.removeCallback(this);
-			}
-		}
-		super.onPause();
-	}
+    private void initMainWindow() {
 
-	private void initCamera(SurfaceHolder surfaceHolder, boolean flashlight) {
-		try {
-			cameraManager.openDriver(surfaceHolder, flashlight);
-			if (handler == null) {
-				cameraManager.startPreview();
-			}
-		} catch (IOException ioe) {
-			if (Util.DEBUGGABLE) {
-				Log.e(TAG, "Error:" + ioe);
-			}
-		} catch (RuntimeException e) {
-			if (Util.DEBUGGABLE) {
-				Log.e(TAG, "Unexpected error initializing camera", e);
-			}
-		}
-	}
+        LinearLayout linearLayout = findViewById(R.id.target_window);
+        GradientDrawable bgShape = (GradientDrawable) linearLayout.getBackground();
+        bgShape.setColor(Util.generateHexColorValue(C.mainWindow));
 
-	@Override
-	public void surfaceCreated(SurfaceHolder holder) {
-		if (holder == null) {
-			if (Util.DEBUGGABLE) {
-				Log.e(TAG,
-						"*** WARNING *** surfaceCreated() gave us a null surface!");
-			}
-		}
-		if (!hasSurface) {
-			hasSurface = true;
-			initCamera(holder, false);
-		}
-	}
+        linearLayout = findViewById(R.id.target_window_shadow);
+        GradientDrawable bgShapeShadow = (GradientDrawable) linearLayout.getBackground();
+        bgShapeShadow.setColor(Util.generateHexColorValue(C.mainWindowShadow));
 
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder) {
-		hasSurface = false;
-	}
+        LinearLayout linearLayoutShadow = findViewById(R.id.window_shadow);
+        linearLayoutShadow.setVisibility(View.VISIBLE);
 
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width,
-			int height) {
+        TextView textView = findViewById(R.id.text_message);
+        textView.setTypeface(C.typeFace);
+        textView.setText(C.welcomeMessage);
+        textView.setVisibility(View.VISIBLE);
+        textView.setTextColor(Util.generateHexColorValue(C.mainWindowForeground));
 
-	}
+        buttonMore.setText(C.btnMore);
+        buttonMore.setVisibility(View.VISIBLE);
+        buttonMore.setTypeface(C.typeFace);
 
-	private void initMainWindow() {
+        buttonNext.setText(C.btnNext);
+        buttonNext.setVisibility(View.VISIBLE);
+        buttonNext.setTypeface(C.typeFace);
 
-		LinearLayout linearLayout = (LinearLayout) findViewById(R.id.target_window);
-		GradientDrawable bgShape = (GradientDrawable) linearLayout
-				.getBackground();
-		bgShape.setColor(Util.generateHexColorValue(C.mainWindow));
+        ImageView frameImage = findViewById(R.id.frame_image);
+        frameImage.setVisibility(View.GONE);
+    }
 
-		linearLayout = (LinearLayout) findViewById(R.id.target_window_shadow);
-		GradientDrawable bgShapeShadow = (GradientDrawable) linearLayout
-				.getBackground();
-		bgShapeShadow.setColor(Util.generateHexColorValue(C.mainWindowShadow));
+    public void onPreExecute() {
+        mLoadingSpinner = Util.startSpinner(this, true);
+    }
 
-		LinearLayout linearLayoutShadow = (LinearLayout) findViewById(R.id.window_shadow);
-		linearLayoutShadow.setVisibility(View.VISIBLE);
+    public void onPostExecute(String result) {
+        try {
+            if (result == null) {
+                Util.startErrorIntent(MainActivity.this, C.getConfigMessage);
+                return;
+            }
+            try {
+                JSONParser.parseConfig(result);
+            } catch (Exception e) {
+                Util.logException(TAG, e);
+                Util.startErrorIntent(MainActivity.this, C.badConfigMessage);
+                return;
+            }
 
-		TextView textView = (TextView) findViewById(R.id.text_message);
-		textView.setTypeface(C.typeFace);
-		textView.setText(C.welcomeMessage);
-		textView.setVisibility(View.VISIBLE);
-		textView.setTextColor(Util
-				.generateHexColorValue(C.mainWindowForeground));
+            if (!isApplicationUpToDate(C.expectedVersion)) {
+                Util.startVersionErrorIntent(MainActivity.this, C.badVersionMessage);
+            }
 
-		buttonMore.setText(C.btnMore);
-		buttonMore.setVisibility(View.VISIBLE);
-		buttonMore.setTypeface(C.typeFace);
-		//if (C.appURL.length() > 0) {
-			buttonNext.setText(C.btnNext);
-			buttonNext.setVisibility(View.VISIBLE);
-			buttonNext.setTypeface(C.typeFace);
-		//}
-		ImageView frameImage = (ImageView) findViewById(R.id.frame_image);
-		frameImage.setVisibility(View.GONE);
-	}
+            Util.stopSpinner(mLoadingSpinner);
+            initMainWindow();
+        } catch (Exception e) {
+            Util.logException(TAG, e);
+        }
+    }
 
-	@SuppressLint("StaticFieldLeak")
-	private class GetConfigTask extends AsyncTask<Void, Void, String> {
-
-		@Override
-		protected void onPreExecute() {
-			mLoadingSpinner = Util.startSpinner(MainActivity.this, true);
-		}
-
-		@Override
-		protected String doInBackground(Void... arg0) {
-			try {
-				return new HttpRequest(MainActivity.this).get(C.configURL);
-			} catch (Exception e) {
-				if (Util.DEBUGGABLE) {
-					Log.e(TAG, "GET " + C.configURL + ": " + e.getMessage(), e);
-				}
-				return null;
-			}
-		}
-
-		@Override
-		protected void onPostExecute(String result) {
-
-			try {
-				if (result == null) {
-					Util.startErrorIntent(MainActivity.this,
-							C.getConfigMessage, true);
-					return;
-				}
-				try {
-					JSONParser.parseConfig(result);
-				} catch (Exception e) {
-					if (Util.DEBUGGABLE) {
-						Log.e(TAG, e.getMessage(), e);
-					}
-					Util.startErrorIntent(MainActivity.this,
-							C.badConfigMessage, true);
-					return;
-				}
-				String locale = java.util.Locale.getDefault().toString();
-				if (locale.length() >= 2) {
-					String lang = locale.substring(0, 2);
-					if (C.languages.contains(lang)) {
-						C.langURL = C.configURL.replace("MultiLang.json", lang.toUpperCase() + ".json");
-						new GetLangConfigTask().execute();
-						return;
-					}
-				}
-				Util.stopSpinner(mLoadingSpinner);
-				initMainWindow();
-			} catch (Exception e) {
-				if (Util.DEBUGGABLE) {
-					Log.e(TAG, e.getMessage());
-				}
-			}
-		}
-	}
-
-	@SuppressLint("StaticFieldLeak")
-	private class GetLangConfigTask extends AsyncTask<Void, Void, String> {
-
-		@Override
-		protected String doInBackground(Void... arg0) {
-			try {
-				return new HttpRequest(MainActivity.this).get(C.langURL);
-			} catch (Exception e) {
-				if (Util.DEBUGGABLE) {
-					Log.e(TAG, "GET " + C.langURL + ": " + e.getMessage(), e);
-				}
-				return null;
-			}
-		}
-
-		@Override
-		protected void onPostExecute(String result) {
-
-			try {
-				if (result == null) {
-					Util.startErrorIntent(MainActivity.this,
-							C.getConfigMessage, true);
-					return;
-				}
-				try {
-					JSONParser.parseConfig(result, true);
-				} catch (Exception e) {
-					if (Util.DEBUGGABLE) {
-						Log.e(TAG, e.getMessage(), e);
-					}
-					Util.startErrorIntent(MainActivity.this,
-							C.badConfigMessage, true);
-					return;
-				}
-				Util.stopSpinner(mLoadingSpinner);
-				initMainWindow();
-			} catch (Exception e) {
-				if (Util.DEBUGGABLE) {
-					Log.e(TAG, e.getMessage());
-				}
-			}
-		}
-	}
+    private boolean isApplicationUpToDate(long expectedVersion) throws PackageManager.NameNotFoundException {
+        PackageManager pm = getPackageManager();
+        PackageInfo packageInfo = pm.getPackageInfo(getPackageName(), 0);
+        return packageInfo.versionCode >= expectedVersion;
+    }
 
 }
