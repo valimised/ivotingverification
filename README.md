@@ -22,7 +22,7 @@ distributed via Google Play Store.
 
 The app is published here:
 https://play.google.com/store/apps/details?id=ee.ivxv.ivotingverification&hl=en.
-Current APK version is 31 (git tag KOV201-APK-31) used during KOV2021 election.
+Current APK version is 34 (git tag RK2023-APK-34) used during RK2023 election.
 
 Steps to building the project and verifying the codebase matches the published
 APKs.
