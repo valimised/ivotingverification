@@ -19,6 +19,8 @@ public class C {
 
 	public static String[] verificationTlsArray = new String[0];
 
+	public static String verificationSNI = "verification.ivxv.invalid";
+
 	public static String configURL = "";
 
 	public static String[] ocspServiceCertArray = new String[0];
@@ -29,7 +31,7 @@ public class C {
 
 	public static String helpURL = "https://www.valimised.ee/";
 
-	public final static String trustStorePass = "secret";
+	public final static String trustStorePass = "";
 
 	public static Typeface typeFace = Typeface.DEFAULT;
 

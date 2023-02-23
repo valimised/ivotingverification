@@ -23,10 +23,11 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
+@SuppressWarnings("deprecation")
 public class HttpRequest {
 	private static final String TAG = "HttpRequest";
 
-	private SSLSocketFactory sslFactory;
+	private final SSLSocketFactory sslFactory;
 
 	public HttpRequest(InputStream truststore) throws Exception {
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
@@ -67,7 +68,7 @@ public class HttpRequest {
 	 * TLSv12SocketFactory wraps a "TLSv1.2" SSLContext's SSLSocketFactory to only enable TLS v1.2.
 	 */
 	private class TLSv12SocketFactory extends SSLSocketFactory {
-		private SSLSocketFactory factory;
+		private final SSLSocketFactory factory;
 
 		TLSv12SocketFactory(KeyManager[] km, TrustManager[] tm, SecureRandom random)
 				throws NoSuchAlgorithmException, KeyManagementException {

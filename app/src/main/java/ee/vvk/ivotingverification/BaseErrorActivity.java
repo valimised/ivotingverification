@@ -9,23 +9,30 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.view.PreviewView;
+
+import java.util.Objects;
+
+import ee.vvk.ivotingverification.qr.CameraManager;
 import ee.vvk.ivotingverification.util.C;
 import ee.vvk.ivotingverification.util.Util;
 
-public abstract class BaseErrorActivity extends CameraSurfaceActivity {
+public abstract class BaseErrorActivity extends AppCompatActivity {
 
     private static final String TAG = BaseErrorActivity.class.getSimpleName();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
-        surfaceResource = R.id.surface_error;
-
         super.onCreate(savedInstanceState);
-
+        Objects.requireNonNull(getSupportActionBar()).hide();
         Intent intent = getIntent();
         String errorMessage = intent.getStringExtra(Util.ERROR_MESSAGE);
         setContentView(R.layout.error_activity);
+
+        PreviewView previewView = findViewById(R.id.error_previewView);
+        new CameraManager(this).cameraPreview(previewView);
+
         Util.logError(TAG, "Message:" + errorMessage);
         initErrorWindow(errorMessage);
     }

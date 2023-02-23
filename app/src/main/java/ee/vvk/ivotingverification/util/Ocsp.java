@@ -18,6 +18,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
 
+@SuppressWarnings("deprecation")
 public class Ocsp {
     private static final String TAG = "OCSP";
 
@@ -52,6 +53,8 @@ public class Ocsp {
         byte[] authorityKeyId = requestedCert.getExtensionValue("2.5.29.35");
         if (authorityKeyId != null) {
             authorityKeyId = Arrays.copyOfRange(authorityKeyId, 6, authorityKeyId.length);
+        } else {
+            throw new Exception("Certificate verification failed");
         }
 
         SingleResp[] responses = basicResp.getResponses();
@@ -66,7 +69,7 @@ public class Ocsp {
                 continue;
             }
             MessageDigest digest = MessageDigest.getInstance(id.getHashAlgOID().toString(), "SC");
-            if (authorityKeyId != null && !Arrays.equals(authorityKeyId, id.getIssuerKeyHash())) {
+            if (!Arrays.equals(authorityKeyId, id.getIssuerKeyHash())) {
                 Util.logWarning(TAG, "Cert's and ocsp's authority key hash do not match");
                 continue;
             }

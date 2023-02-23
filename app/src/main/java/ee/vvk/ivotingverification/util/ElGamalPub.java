@@ -56,6 +56,11 @@ public class ElGamalPub {
     }
 
     public String getDecryptedChoice(byte[] in, byte[] rnd) throws Exception {
+        if (!checkRnd(in, rnd)) {
+            Util.logDebug(TAG, "Error: the r given by the Voting Application is not the actual r used (c1 != g^r)");
+            return null;
+        }
+
         BigInteger choice = getChoice(in);
 
         BigInteger factor = key.modPow(new BigInteger(1, rnd), p);
@@ -67,6 +72,15 @@ public class ElGamalPub {
         }
         BigInteger m = s.compareTo(q) > 0 ? p.subtract(s) : s;
         return stripPadding(m.toByteArray());
+    }
+
+    private boolean checkRnd(byte[] in, byte[] rnd) throws Exception {
+        ASN1InputStream bIn = new ASN1InputStream(new ByteArrayInputStream(in));
+        ASN1Sequence parentObj = (ASN1Sequence) ((ASN1Sequence) bIn.readObject()).getObjectAt(1);
+        BigInteger c1 = new BigInteger(parentObj.getObjectAt(0).toString(), 10);
+        BigInteger r = new BigInteger(1, rnd);
+        BigInteger result = g.modPow(r, p);  // g^r mod p
+        return result.compareTo(c1) == 0;    // g^r == c1
     }
 
     private BigInteger getChoice(byte[] in) throws IOException {
@@ -82,7 +96,7 @@ public class ElGamalPub {
         }
         // As the plaintext byte array is obtained from BigInteger, leading 0 is omitted
         if (in.length + 1 != p.bitLength() / 8) {
-            throw new Exception("Incorrect plaintext length");
+            throw new Exception("Incorrect plaintext length " + in.length);
         }
         if (in[0] != 0x01) {
             throw new Exception("Incorrect padding head");

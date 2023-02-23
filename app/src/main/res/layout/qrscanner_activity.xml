@@ -6,26 +6,10 @@
     android:background="@drawable/frame_bg"
     android:orientation="vertical">
 
-    <SurfaceView
-        android:id="@+id/preview_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <androidx.camera.view.PreviewView
+        android:id="@+id/qr_previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:background="@null" />
-
-    <ee.vvk.ivotingverification.qr.ViewfinderView
-        android:id="@+id/viewfinder_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@null" />
-
-    <ImageView
-        android:id="@+id/frame_image"
-        android:layout_width="250dp"
-        android:layout_height="250dp"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:src="@drawable/frame_img"
-        android:contentDescription=""
-        tools:ignore="ContentDescription" />
 
 </RelativeLayout>

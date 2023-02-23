@@ -61,7 +61,7 @@ public class DecryptionActivity extends Activity implements AsyncTaskActivity<Ar
         list = findViewById(R.id.list);
 
         closeBtn = findViewById(R.id.close_view_btn);
-        closeBtn.setOnClickListener(view -> exitActivity());
+        closeBtn.setOnClickListener(view -> finish());
 
         lblChoice = findViewById(R.id.choice_title_label);
         lblChoice.setText(C.lblChoice);
@@ -146,13 +146,6 @@ public class DecryptionActivity extends Activity implements AsyncTaskActivity<Ar
         finish();
     }
 
-    private void exitActivity() {
-        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        intent.putExtra(Util.EXIT, true);
-        startActivity(intent);
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -170,7 +163,7 @@ public class DecryptionActivity extends Activity implements AsyncTaskActivity<Ar
 
         @Override
         public void onFinish() {
-            exitActivity();
+            finish();
         }
 
         @Override

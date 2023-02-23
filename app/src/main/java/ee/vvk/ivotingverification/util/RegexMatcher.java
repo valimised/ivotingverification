@@ -3,6 +3,7 @@ package ee.vvk.ivotingverification.util;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.util.Objects;
 
 
 public class RegexMatcher {
@@ -48,7 +49,7 @@ public class RegexMatcher {
 
 	public static boolean isValidUTF8(final byte[] bytes) {
 		try {
-			Charset.availableCharsets().get("UTF-8").newDecoder()
+			Objects.requireNonNull(Charset.availableCharsets().get("UTF-8")).newDecoder()
 					.decode(ByteBuffer.wrap(bytes));
 		} catch (CharacterCodingException e) {
 			return false;

@@ -59,9 +59,6 @@ public class JSONParser {
 		C.lblChoice = texts.optString("lbl_choice", C.lblChoice);
 
 		C.lblCloseTimeout = texts.optString("lbl_close_timeout", C.lblCloseTimeout);
-		if (!C.lblCloseTimeout.contains("XX")) {
-			throw new IllegalArgumentException("lbl_close_timeout does not contain XX");
-		}
 	}
 
 	private static void parseJsonErrors(JSONObject appConfig) {
@@ -154,6 +151,7 @@ public class JSONParser {
 		/* Mandatory */
 		C.verificationUrlArray = jsonToArray(params.getJSONArray("verification_url"));
 		C.verificationTlsArray = jsonToArray(params.getJSONArray("verification_tls"));
+		C.verificationSNI = params.optString("verification_sni", C.verificationSNI);
 		C.tspregServiceCert = params.getString("tspreg_service_cert");
 		C.tspregClientCert = params.getString("tspreg_client_cert");
 		C.publicKey = params.getString("public_key");

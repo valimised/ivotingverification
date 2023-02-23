@@ -28,15 +28,15 @@ public class TriangleView extends LinearLayout {
 		this.color = color;
 		this.number = number;
 		this.context = context;
-		commonConstructor(context);
+		commonConstructor();
 	}
 
 	public TriangleView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		commonConstructor(context);
+		commonConstructor();
 	}
 
-	private void commonConstructor(Context context) {
+	private void commonConstructor() {
 		setBackgroundColor(Color.TRANSPARENT);
 
 		trianglePaint = new Paint();
@@ -54,12 +54,12 @@ public class TriangleView extends LinearLayout {
 		mTextPaint.setAntiAlias(true);
 		mTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT_BOLD,
 				Typeface.BOLD));
-		mTextPaint.setTextSize((int) Util.convertPixelsToDp(number.length() == 4 ? 16 : 18, context));
+		mTextPaint.setTextSize((int) Util.convertDpToPixels(number.length() == 4 ? 16 : 18, context));
 		mTextPaint.setColor(Util.generateHexColorValue(C.lblForeground));
 		canvas.save();
 		canvas.rotate(-45);
-		canvas.drawText(number, (int) Util.convertPixelsToDp(number.length() == 4 ? -20 : -15, context),
-				(int) Util.convertPixelsToDp(30, context), mTextPaint);
+		canvas.drawText(number, (int) Util.convertDpToPixels(number.length() == 4 ? -20 : -15, context),
+				(int) Util.convertDpToPixels(30, context), mTextPaint);
 		canvas.restore();
 	}
 

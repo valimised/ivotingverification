@@ -19,18 +19,18 @@
 
 package ee.vvk.ivotingverification.qr;
 
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
-import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 
 /**
  * Finishes an activity after a period of inactivity if the device is on battery
@@ -57,8 +57,7 @@ public final class InactivityTimer {
 			try {
 				inactivityFuture = inactivityTimer.schedule(new FinishListener(
 						activity), INACTIVITY_DELAY_SECONDS, TimeUnit.SECONDS);
-			} catch (RejectedExecutionException ree) {
-			}
+			} catch (RejectedExecutionException ignored) { }
 		}
 	}
 
@@ -66,8 +65,7 @@ public final class InactivityTimer {
 		cancel();
 		try {
 			activity.unregisterReceiver(powerStatusReceiver);
-		} catch (Exception e) {
-		}
+		} catch (Exception ignored) { }
 	}
 
 	public void onResume() {

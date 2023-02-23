@@ -4,6 +4,8 @@ import android.os.Build;
 import android.util.JsonReader;
 import android.util.JsonToken;
 
+import androidx.annotation.NonNull;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,6 +39,7 @@ public class JsonRpc {
             this.method = method;
         }
 
+        @NonNull
         public String toString() {
             return String.format("%s.%s", "RPC", method);
         }

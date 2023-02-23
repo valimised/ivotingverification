@@ -7,5 +7,9 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:backgroundDimEnabled">false</item>
     </style>
+    <style
+        name="AppCompatTheme" parent="@style/Theme.AppCompat">
+        <item name="android:windowBackground">@null</item>
+    </style>
 
 </resources>

@@ -41,18 +41,22 @@ Building:
   * Gradle buildsystem is used, actual version is specified in
     gradle/wrapper/gradle-wrapper.properties (currently 7.0.2)
   * Run gradlew (gradlew.bat on Windows) script in the root directory with
-    'assembleRelease' argument
+    'assembleRelease' argument (e.g., './gradlew assembleRelease' on Linux)
+       * Android Gradle plugin requires Java 11 to run
   * Output apk will be located at
     app/build/outputs/apk/release/app-release-unsigned.apk
 
 Comparing APKs:
 
-Process of obtaining APKs from Google Play Store is not described in this
-document.
+Process of obtaining APKs from Google Play Store:
+   * Copy the Google Play URL address of the app (https://play.google.com/store/apps/details?id=ee.ivxv.ivotingverification&hl=en)
+   * Open the APK downloader (e.g., https://apk-dl.com/) and paste the copied URL address
+   * Click "Download APK file" and then "Start download"
 
 As APK is a valid ZIP file, the quickest method to compare two APKs is with some
-ZIP comparison tool, for example 'zipcmp' on any Linux system. For more thorough
+ZIP comparison tool (e.g., 'zipcmp' or 'diff' on any Linux system). For more thorough
 analysis diffoscope (https://diffoscope.org/) could be used.
+   * For example, unzipping the APK files and using the 'diff -ru folder1/ folder2/ | sort' command would be helpful
 
 The expected differences will be in the META_INF directory. The published APK
 will contain two extra files (CERT.SF, CERT.RSA) and more detailed MANIFEST.MF

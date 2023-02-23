@@ -51,7 +51,6 @@ public class Util {
 	public final static String EXIT = "ee.vvk.ivotingverification.EXIT";
 	public final static String RESULT = "ee.vvk.ivotingverification.RESULT";
 	public final static String ENCODING = "UTF-8";
-	public final static String VERIFICATION_HOSTNAME = "verification.ivxv.invalid";
 	public final static int PERMISSION_REQUEST_CAMERA = 1;
 
 	public final static long MAX_TIME_BETWEEN_OCSP_PKIX = 1000 * 60 * 15; // 15 minutes in ms
@@ -210,31 +209,12 @@ public class Util {
 		return hexColor;
 	}
 
-	public static float convertPixelsToDp(float px, Context context) {
+	public static float convertDpToPixels(float dp, Context context) {
 		Resources resources = context.getResources();
 		DisplayMetrics metrics = resources.getDisplayMetrics();
-		return px * (metrics.densityDpi / 160f);
+		return dp * (metrics.densityDpi / 160f);
 	}
 
-	public static String readRawTextFile(Context context, int fileName) {
-		InputStream inputStream = context.getResources().openRawResource(
-				fileName);
-
-		InputStreamReader inputReader = new InputStreamReader(inputStream);
-		BufferedReader buffReader = new BufferedReader(inputReader);
-		String line;
-		StringBuilder text = new StringBuilder();
-
-		try {
-			while ((line = buffReader.readLine()) != null) {
-				text.append(line);
-//				text.append('\n');
-			}
-		} catch (IOException e) {
-			return null;
-		}
-		return text.toString();
-	}
 
 	public static String getDeviceName() {
 		String manufacturer = Build.MANUFACTURER;
@@ -287,16 +267,6 @@ public class Util {
 		X500Name x500name = new JcaX509CertificateHolder(cert).getIssuer();
 		RDN cn = x500name.getRDNs(BCStyle.CN)[0];
 		return IETFUtils.valueToString(cn.getFirst().getValue()).replace("\\,", ", ");
-	}
-
-	public static X509Certificate[] getEsteidCerts(Activity activity) throws Exception {
-		byte[] certData = toBytes(activity.getResources().openRawResource(R.raw.esteid_sk_2015));
-		X509Certificate sk2015 = loadCertificate(certData);
-
-		certData = toBytes(activity.getResources().openRawResource(R.raw.esteid2018));
-		X509Certificate esteid2018 = loadCertificate(certData);
-
-		return new X509Certificate[] {sk2015, esteid2018};
 	}
 
 	public static X509Certificate verifyCertIssuerSig(X509Certificate cert, X509Certificate... issuers) throws Exception {

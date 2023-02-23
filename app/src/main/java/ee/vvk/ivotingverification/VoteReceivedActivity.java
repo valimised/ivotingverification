@@ -48,7 +48,8 @@ public class VoteReceivedActivity extends Activity {
 
         TextView lblVoteSigner = findViewById(R.id.vote_signer_label);
         lblVoteSigner.setTypeface(C.typeFace);
-        lblVoteSigner.setText(C.lblVoteSigner + voteContainerInfo.getSignerCN());
+        lblVoteSigner.setText(
+                getString(R.string.lblVoteSinger,C.lblVoteSigner,voteContainerInfo.getSignerCN()));
         lblVoteSigner.setTextColor(Util.generateHexColorValue(C.lblOuterContainerForeground));
 
         Button btnVoteVerify = findViewById(R.id.vote_btn_verify);

@@ -45,7 +45,7 @@ public class GetVoteTask extends BaseTask<VoteContainerInfo> {
         params.put("sessionid", qrCodeContents.getSessionId());
         ByteBuffer buf = JsonRpc.createRequest(JsonRpc.Method.VERIFY, params);
         TlsConnection tls = new TlsConnection(C.verificationTlsArray);
-        response = tls.sendRequest(C.verificationUrlArray, Util.VERIFICATION_HOSTNAME, buf);
+        response = tls.sendRequest(C.verificationUrlArray, C.verificationSNI, buf);
         return readResponse(response);
     }
 

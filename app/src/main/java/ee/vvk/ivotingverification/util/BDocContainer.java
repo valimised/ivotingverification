@@ -7,23 +7,18 @@ import android.util.Pair;
 import org.spongycastle.asn1.ASN1EncodableVector;
 import org.spongycastle.asn1.ASN1Integer;
 import org.spongycastle.asn1.DERSequence;
-import org.spongycastle.asn1.x509.Certificate;
-import org.spongycastle.asn1.x509.SubjectPublicKeyInfo;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.RSAPublicKeySpec;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -61,7 +56,7 @@ public class BDocContainer {
     private final ZipInputStream zip;
     public byte[] manifest;
     public byte[] signature;
-    private Map<String, byte[]> votes = new HashMap<>();
+    private final Map<String, byte[]> votes = new HashMap<>();
     public SigningAlg signingAlg;
     public X509Certificate cert;
     public X509Certificate issuer;
@@ -88,9 +83,9 @@ public class BDocContainer {
                 verificationProfile.getTspregServiceCert(),
                 container.getSignatureValueCanon());
 
-		long d = genTime - producedAt;
+		long d = producedAt - genTime;
 		if (d < 0) {
-			throw new Exception("PKIX predates OCSP");
+			throw new Exception("OCSP predates PKIX");
 		}
 		if (d > Util.MAX_TIME_BETWEEN_OCSP_PKIX) {
 			throw new Exception("PKIX and OCSP timestamps too far apart");
@@ -190,46 +185,7 @@ public class BDocContainer {
         } catch (Exception e) {
             throw new Exception("Vote signer cert for " + signerCN + " not properly signed by any of ESTEID certs: " + issuerCN);
         }
-
-        try {
-            return cert.getPublicKey();
-        } catch (Exception e) {
-            // This was probably caused by one of the misencoded Estonian RSA public keys: either
-            // the modulus or exponent has an extra 0x00-byte prefix (negative encodings are
-            // handled by SC itself). Parse the public key manually, resolving these errors. If it
-            // turns out, that our assumption was wrong, then rethrow the original error.
-            try {
-                Certificate c = Certificate.getInstance(certData);
-                SubjectPublicKeyInfo spki = c.getSubjectPublicKeyInfo();
-                if (!RSA_OID.equals(spki.getAlgorithm().getAlgorithm().getId())) {
-                    throw new Exception("Public key algorithm not RSA");
-                }
-                byte[] pub = spki.getPublicKeyData().getOctets();
-
-                Pair<Integer, Integer> modexpRange = asn1Range(0x30, pub);
-                if (modexpRange.second != pub.length) {
-                    throw new Exception("Public key has trailing garbage");
-                }
-                byte[] modexp = Arrays.copyOfRange(pub, modexpRange.first, modexpRange.second);
-
-                Pair<Integer, Integer> modRange = asn1Range(0x02, modexp);
-                byte[] mod = Arrays.copyOfRange(modexp, modRange.first, modRange.second);
-
-                byte[] exp = Arrays.copyOfRange(modexp, modRange.second, modexp.length);
-                Pair<Integer, Integer> expRange = asn1Range(0x02, exp);
-                if (expRange.second != exp.length) {
-                    throw new Exception("RSA sequence has trailing garbage");
-                }
-                exp = Arrays.copyOfRange(exp, expRange.first, expRange.second);
-
-                KeyFactory kf = KeyFactory.getInstance("RSA", "SC");
-                return kf.generatePublic(new RSAPublicKeySpec(
-                        new BigInteger(1, mod), new BigInteger(1, exp)));
-            } catch (Exception exception) {
-                Util.logDebug(TAG, "Ignored Exception, rethrowing original", exception);
-                throw e;
-            }
-        }
+        return cert.getPublicKey();
     }
 
     private static Pair<Integer, Integer> asn1Range(int tag, byte[] der) throws Exception {

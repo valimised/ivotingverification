@@ -18,14 +18,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.view.PreviewView;
+
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.File;
 import java.io.InputStream;
 import java.security.Security;
+import java.util.Objects;
 
 import ee.vvk.ivotingverification.dialog.LoadingSpinner;
-import ee.vvk.ivotingverification.model.QRCodeContents;
+import ee.vvk.ivotingverification.qr.CameraManager;
 import ee.vvk.ivotingverification.qr.InactivityTimer;
 import ee.vvk.ivotingverification.tasks.AsyncTaskActivity;
 import ee.vvk.ivotingverification.tasks.GetConfigTask;
@@ -34,26 +38,20 @@ import ee.vvk.ivotingverification.util.C;
 import ee.vvk.ivotingverification.util.JSONParser;
 import ee.vvk.ivotingverification.util.Util;
 
-public class MainActivity extends CameraSurfaceActivity implements AsyncTaskActivity<String> {
-
-    private static final int REQUEST_CODE_QR_ACTIVITY = 1;
+public class MainActivity extends AppCompatActivity implements AsyncTaskActivity<String> {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-
     private InactivityTimer inactivityTimer;
     private LoadingSpinner mLoadingSpinner;
-
     private Button buttonMore;
     private Button buttonNext;
+    private PreviewView previewView;
 
     public static boolean deleteDir(File dir) {
-
         if (dir == null) {
             return true;
         }
-
         boolean all_deleted = true;
-
         if (dir.isDirectory()) {
             String[] children = dir.list();
             if (children != null) {
@@ -62,7 +60,6 @@ public class MainActivity extends CameraSurfaceActivity implements AsyncTaskActi
                 }
             }
         }
-
         if (all_deleted) {
             return dir.delete();
         }
@@ -71,29 +68,28 @@ public class MainActivity extends CameraSurfaceActivity implements AsyncTaskActi
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-
-        surfaceResource = R.id.surface;
-
         super.onCreate(savedInstanceState);
+        Objects.requireNonNull(getSupportActionBar()).hide();
 
-        C.configURL = Util.readRawTextFile(this.getApplicationContext(), R.raw.config);
 
+
+        C.configURL = BuildConfig.CONFIG_FILE;
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
         Util.DEBUGGABLE = (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE));
-
         if (getIntent().getBooleanExtra(Util.EXIT, false)) {
             finish();
         }
 
         inactivityTimer = new InactivityTimer(this);
-
         setContentView(R.layout.main_activity);
+        previewView = findViewById(R.id.main_previewView);
 
         LinearLayout linearLayout = findViewById(R.id.target_window);
         GradientDrawable bgShape = (GradientDrawable) linearLayout.getBackground();
         bgShape.setColor(Color.GRAY);
 
-        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
         if (networkInfo != null && networkInfo.isConnected()) {
             TaskRunner runner = new TaskRunner();
@@ -125,17 +121,19 @@ public class MainActivity extends CameraSurfaceActivity implements AsyncTaskActi
     public void onResume() {
         super.onResume();
         inactivityTimer.onResume();
+        new CameraManager(this).cameraPreview(previewView);
     }
 
     @Override
     public void onPause() {
         inactivityTimer.onPause();
         super.onPause();
+        new CameraManager(this).cameraPreview(previewView);
     }
 
     public void clickNextButton(View view) {
         Intent QRCodeDecoder = new Intent(this, QRScannerActivity.class);
-        startActivityForResult(QRCodeDecoder, REQUEST_CODE_QR_ACTIVITY);
+        startActivity(QRCodeDecoder);
     }
 
     public void clickMoreButton(View view) {
@@ -147,28 +145,6 @@ public class MainActivity extends CameraSurfaceActivity implements AsyncTaskActi
         }
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        if (requestCode == REQUEST_CODE_QR_ACTIVITY) {
-            if (resultCode == RESULT_OK) {
-                String contents = intent.getStringExtra(Util.RESULT);
-                Util.logDebug(TAG, contents);
-                try {
-                    QRCodeContents qr = new QRCodeContents(contents);
-                    Intent next_intent = new Intent(this, VoteDownloadActivity.class);
-                    next_intent.putExtra(Util.QR_CODE_CONTENTS, qr);
-                    startActivity(next_intent);
-                } catch (Exception e) {
-                    Util.startErrorIntent(this, C.problemQrCodeMessage);
-                }
-            }
-            if (resultCode == RESULT_CANCELED) {
-                finish();
-                Intent intentMain = new Intent(getApplicationContext(), MainActivity.class);
-                startActivity(intentMain);
-            }
-        }
-    }
 
     @Override
     protected void onDestroy() {
@@ -242,10 +218,10 @@ public class MainActivity extends CameraSurfaceActivity implements AsyncTaskActi
         }
     }
 
-    private boolean isApplicationUpToDate(long expectedVersion) throws PackageManager.NameNotFoundException {
+    private boolean isApplicationUpToDate(long expectedVersion)
+            throws PackageManager.NameNotFoundException {
         PackageManager pm = getPackageManager();
         PackageInfo packageInfo = pm.getPackageInfo(getPackageName(), 0);
         return packageInfo.versionCode >= expectedVersion;
     }
-
 }

@@ -19,6 +19,7 @@ import ee.vvk.ivotingverification.tasks.AsyncTaskActivity;
 import ee.vvk.ivotingverification.tasks.GetVoteTask;
 import ee.vvk.ivotingverification.tasks.TaskRunner;
 import ee.vvk.ivotingverification.util.C;
+import ee.vvk.ivotingverification.util.EstEidLoader;
 import ee.vvk.ivotingverification.util.Util;
 
 public class VoteDownloadActivity extends Activity implements AsyncTaskActivity<VoteContainerInfo> {
@@ -42,7 +43,7 @@ public class VoteDownloadActivity extends Activity implements AsyncTaskActivity<
 
         try {
             verificationProfile = VerificationProfile.loadVerificationProfile(
-                    C.publicKey, Util.getEsteidCerts(VoteDownloadActivity.this),
+                    C.publicKey, EstEidLoader.getEsteidCerts(VoteDownloadActivity.this),
                     C.ocspServiceCertArray, C.tspregServiceCert, C.tspregClientCert);
         } catch (Exception e) {
             Util.startErrorIntent(VoteDownloadActivity.this, C.badConfigMessage);
@@ -88,9 +89,5 @@ public class VoteDownloadActivity extends Activity implements AsyncTaskActivity<
         } else {
             Util.startErrorIntent(VoteDownloadActivity.this, C.badServerResponseMessage);
         }
-    }
-
-    public Activity getActivity() {
-        return this;
     }
 }
